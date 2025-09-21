@@ -6,16 +6,17 @@ import { PedidoModule } from './pedido/pedido.module';
 import { Produto } from './produto/produto.entity';
 import { Usuario } from './usuario/usuario.entity';
 import { Pedido } from './pedido/pedido.entity';
-import { PixModule } from './pix/pix.module'; // 👈 importar
+import { PixModule } from './pix/pix.module'; //  importar
+import { ImagemModule } from './imagens/imagem.module';
 
 @Module({
   imports: [
     TypeOrmModule.forRoot({
       type: 'postgres',
       host: process.env.DB_HOST || 'localhost',
-      port: +(process.env.DB_PORT || 5433),
+      port: +(process.env.DB_PORT || 5432),
       username: process.env.DB_USER || 'postgres',
-      password: process.env.DB_PASS || '2004habm',
+      password: process.env.DB_PASS || 'postgres',
       database: process.env.DB_NAME || 'ecommerce_local',
       entities: [Produto, Usuario, Pedido],
       synchronize: true,
@@ -23,7 +24,8 @@ import { PixModule } from './pix/pix.module'; // 👈 importar
     ProdutoModule,
     UsuarioModule,
     PedidoModule,
-    PixModule, // 👈 adicionar aqui
+    PixModule,
+    ImagemModule //adicionar aqui
   ],
 })
 export class AppModule {}
