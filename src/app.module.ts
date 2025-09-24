@@ -16,7 +16,7 @@ import { ImagemModule } from './imagens/imagem.module';
       host: process.env.DB_HOST || 'postgres',
       port: +(process.env.DB_PORT || 5432),
       username: process.env.DB_USER || 'postgres',
-      password: process.env.DB_PASS || 'postgres',
+      password: process.env.DB_PASS || 'password',
       database: process.env.DB_NAME || 'ecommerce_local',
       entities: [Produto, Usuario, Pedido],
       synchronize: true,
