@@ -13,10 +13,10 @@ import { ImagemModule } from './imagens/imagem.module';
   imports: [
     TypeOrmModule.forRoot({
       type: 'postgres',
-      host: process.env.DB_HOST || 'shuttle.proxy.rlwy.net:20461',
+      host: process.env.DB_HOST || 'postgres',
       port: +(process.env.DB_PORT || 5432),
       username: process.env.DB_USER || 'postgres',
-      password: process.env.DB_PASS || 'jLrxegnfAYqqUFbXahfGIUOQEoeWNrsW',
+      password: process.env.DB_PASS || 'postgres',
       database: process.env.DB_NAME || 'ecommerce_local',
       entities: [Produto, Usuario, Pedido],
       synchronize: true,
