@@ -8,9 +8,19 @@ import { Usuario } from './usuario/usuario.entity';
 import { Pedido } from './pedido/pedido.entity';
 import { PixModule } from './pix/pix.module'; //  importar
 import { ImagemModule } from './imagens/imagem.module';
+import { ConfigModule } from '@nestjs/config';
+import { EmailModule } from './email/email.module';
+
+import { EmailService } from './email/email.service';
+import * as dotenv from 'dotenv';
+dotenv.config();
 
 @Module({
   imports: [
+    ConfigModule.forRoot({
+      isGlobal: true, // disponível em toda a aplicação
+    }),
+    EmailModule,
     TypeOrmModule.forRoot({
       type: 'postgres',
       host: process.env.DB_HOST || 'postgres',
@@ -26,6 +36,8 @@ import { ImagemModule } from './imagens/imagem.module';
     PedidoModule,
     PixModule,
     ImagemModule //adicionar aqui
+    
   ],
+  providers: [EmailService],
 })
 export class AppModule {}
