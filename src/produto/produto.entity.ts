@@ -34,4 +34,7 @@ export class Produto {
 
   @Column('text')
   descricao: string;
+  
+  @Column({ nullable: true })   // 👈 nova coluna
+  categoria: string;
 }
