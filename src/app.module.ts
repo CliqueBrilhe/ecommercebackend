@@ -1,43 +1,44 @@
+// src/app.module.ts
 import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+
 import { ProdutoModule } from './produto/produto.module';
 import { UsuarioModule } from './usuario/usuario.module';
 import { PedidoModule } from './pedido/pedido.module';
-import { Produto } from './produto/produto.entity';
-import { Usuario } from './usuario/usuario.entity';
-import { Pedido } from './pedido/pedido.entity';
-import { PixModule } from './pix/pix.module'; //  importar
+import { PixModule } from './pix/pix.module';
 import { ImagemModule } from './imagens/imagem.module';
-import { ConfigModule } from '@nestjs/config';
 import { EmailModule } from './email/email.module';
-
-import { EmailService } from './email/email.service';
-import * as dotenv from 'dotenv';
-dotenv.config();
 
 @Module({
   imports: [
-    ConfigModule.forRoot({
-      isGlobal: true, // disponível em toda a aplicação
-    }),
-    EmailModule,
+    // Lê variáveis do .env uma vez e disponibiliza globalmente
+    ConfigModule.forRoot({ isGlobal: true }),
+
+    // Conexão com o Postgres (ajuste se precisar)
     TypeOrmModule.forRoot({
       type: 'postgres',
-      host: process.env.DB_HOST || 'postgres',
-      port: +(process.env.DB_PORT || 5432),
+      host: process.env.DB_HOST || 'localhost',
+      port: Number(process.env.DB_PORT || 5432),
       username: process.env.DB_USER || 'postgres',
-      password: process.env.DB_PASS || 'password',
+      password: process.env.DB_PASS || 'postgres',
       database: process.env.DB_NAME || 'ecommerce_local',
-      entities: [Produto, Usuario, Pedido],
-      synchronize: true,
+      autoLoadEntities: true,   // carrega entidades dos módulos automaticamente
+      synchronize: true,        // use false em produção
+      // Se você já usa DATABASE_URL, pode trocar por:
+      // url: process.env.DATABASE_URL,
     }),
+
+    // Módulos da aplicação
     ProdutoModule,
     UsuarioModule,
     PedidoModule,
     PixModule,
-    ImagemModule //adicionar aqui
-    
+    ImagemModule,
+
+    // Módulo de e-mail (já provê o EmailService)
+    EmailModule,
   ],
-  providers: [EmailService],
+  // Não precisa providers aqui para EmailService, ele já é provido pelo EmailModule
 })
 export class AppModule {}

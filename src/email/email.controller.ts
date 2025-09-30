@@ -1,17 +1,21 @@
-// email.controller.ts
-import { Controller, Post, Body } from '@nestjs/common';
+import { Body, Controller, Post } from '@nestjs/common';
 import { EmailService } from './email.service';
+import { SendEmailDto } from './dto/send-email.dto';
+
 
 @Controller('email')
 export class EmailController {
-  constructor(private readonly emailService: EmailService) {}
+constructor(private readonly email: EmailService) {}
 
-  @Post('send')
-  async sendEmail(
-    @Body('to') to: string,
-    @Body('subject') subject: string,
-    @Body('text') text: string,
-  ) {
-    return this.emailService.sendMail(to, subject, text);
-  }
+
+@Post('simple')
+sendSimple(@Body() dto: SendEmailDto) {
+return this.email.sendSimple(dto);
+}
+
+
+@Post('template')
+sendTemplate(@Body() dto: SendEmailDto) {
+return this.email.sendTemplate(dto);
+}
 }
