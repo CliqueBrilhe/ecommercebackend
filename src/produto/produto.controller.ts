@@ -30,4 +30,9 @@ export class ProdutoController {
   delete(@Param('id') id: number) {
     return this.produtoService.delete(id);
   }
+
+  @Get('categorias')
+  async getCategorias() {
+    return this.produtoService.getCategorias();
+  }
 }

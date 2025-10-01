@@ -29,4 +29,13 @@ export class ProdutoService {
   delete(id: number) {
     return this.produtoRepo.delete(id);
   }
+
+  async getCategorias(): Promise<string[]> {
+    const result = await this.produtoRepo
+      .createQueryBuilder('product')
+      .select('DISTINCT product.categoria', 'categoria')
+      .getRawMany();
+
+    return result.map(r => r.categoria);
+  }
 }
