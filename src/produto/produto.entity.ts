@@ -29,7 +29,7 @@ export class Produto {
   @Column('decimal', { precision: 5, scale: 2 })
   profundidade: number;
 
-  @Column('text', { array: true, nullable: true })
+  @Column('text', { array: true, nullable: false, default: () => "'{}'" })
   imagens: string[];
 
   @Column('text')

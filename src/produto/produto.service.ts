@@ -12,28 +12,31 @@ export class ProdutoService {
 
   
   async getCategorias(): Promise<string[]> {
-  const result = await this.produtoRepo
-    .createQueryBuilder('produto')
-    .select('DISTINCT produto.categoria', 'categoria')
-    .where('produto.categoria IS NOT NULL')
-    .andWhere("produto.categoria <> ''")
-    .getRawMany();
+    const result = await this.produtoRepo
+      .createQueryBuilder('produto')
+      .select('DISTINCT produto.categoria', 'categoria')
+      .where('produto.categoria IS NOT NULL')
+      .andWhere("produto.categoria <> ''")
+      .getRawMany();
 
-  return result
-    .map((r: { categoria: string }) => (r.categoria ?? '').trim())
-    .filter((c) => c.length > 0);
-}
+    return result
+      .map((r: { categoria: string }) => (r.categoria ?? '').trim())
+      .filter((c) => c.length > 0);
+  }
   create(produto: Produto) {
     return this.produtoRepo.save(produto);
   }
+findAll() {
+  return this.produtoRepo.find().then(items =>
+    items.map(p => ({ ...p, imagens: Array.isArray(p.imagens) ? p.imagens : [] }))
+  );
+}
 
-  findAll() {
-    return this.produtoRepo.find();
-  }
-
-  findOne(id: number) {
-    return this.produtoRepo.findOneBy({ id });
-  }
+findOne(id: number) {
+  return this.produtoRepo.findOneBy({ id }).then(p =>
+    p ? { ...p, imagens: Array.isArray(p.imagens) ? p.imagens : [] } : null
+  );
+}
 
   update(id: number, produto: Partial<Produto>) {
     return this.produtoRepo.update(id, produto);
