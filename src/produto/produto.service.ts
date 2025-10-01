@@ -10,6 +10,16 @@ export class ProdutoService {
     private produtoRepo: Repository<Produto>,
   ) {}
 
+  
+  async getCategorias(): Promise<string[]> {
+    const result = await this.produtoRepo
+      .createQueryBuilder('produto')
+      .select('DISTINCT produto.categoria', 'categoria')
+      .getRawMany();
+
+    return result.map(r => r.categoria);
+  }
+  
   create(produto: Produto) {
     return this.produtoRepo.save(produto);
   }
@@ -30,12 +40,4 @@ export class ProdutoService {
     return this.produtoRepo.delete(id);
   }
 
-  async getCategorias(): Promise<string[]> {
-    const result = await this.produtoRepo
-      .createQueryBuilder('produto')
-      .select('DISTINCT produto.categoria', 'categoria')
-      .getRawMany();
-
-    return result.map(r => r.categoria);
-  }
 }

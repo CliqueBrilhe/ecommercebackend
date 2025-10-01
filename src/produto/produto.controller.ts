@@ -10,6 +10,11 @@ export class ProdutoController {
   create(@Body() produto: Produto) {
     return this.produtoService.create(produto);
   }
+  
+  @Get('categorias')
+  async getCategorias() {
+    return this.produtoService.getCategorias();
+  }
 
   @Get()
   findAll() {
@@ -31,8 +36,5 @@ export class ProdutoController {
     return this.produtoService.delete(id);
   }
 
-  @Get('categorias')
-  async getCategorias() {
-    return this.produtoService.getCategorias();
-  }
+  
 }
