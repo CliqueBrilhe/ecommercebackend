@@ -32,7 +32,7 @@ export class ProdutoService {
 
   async getCategorias(): Promise<string[]> {
     const result = await this.produtoRepo
-      .createQueryBuilder('product')
+      .createQueryBuilder('produto')
       .select('DISTINCT product.categoria', 'categoria')
       .getRawMany();
 
