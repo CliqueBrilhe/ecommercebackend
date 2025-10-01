@@ -12,14 +12,17 @@ export class ProdutoService {
 
   
   async getCategorias(): Promise<string[]> {
-    const result = await this.produtoRepo
-      .createQueryBuilder('produto')
-      .select('DISTINCT produto.categoria', 'categoria')
-      .getRawMany();
+  const result = await this.produtoRepo
+    .createQueryBuilder('produto')
+    .select('DISTINCT produto.categoria', 'categoria')
+    .where('produto.categoria IS NOT NULL')
+    .andWhere("produto.categoria <> ''")
+    .getRawMany();
 
-    return result.map(r => r.categoria);
-  }
-  
+  return result
+    .map((r: { categoria: string }) => (r.categoria ?? '').trim())
+    .filter((c) => c.length > 0);
+}
   create(produto: Produto) {
     return this.produtoRepo.save(produto);
   }
