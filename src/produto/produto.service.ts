@@ -33,7 +33,7 @@ export class ProdutoService {
   async getCategorias(): Promise<string[]> {
     const result = await this.produtoRepo
       .createQueryBuilder('produto')
-      .select('DISTINCT product.categoria', 'categoria')
+      .select('DISTINCT produto.categoria', 'categoria')
       .getRawMany();
 
     return result.map(r => r.categoria);
