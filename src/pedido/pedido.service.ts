@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Pedido } from './pedido.entity';
+import { Pedido,  StatusPedido } from './pedido.entity';
 import { Produto } from '../produto/produto.entity';
 import { Usuario } from '../usuario/usuario.entity';
 
@@ -54,6 +54,12 @@ export class PedidoService {
     return this.pedidoRepo.save(pedido);
   }
 
+
+
+
+
+
+
   findAll() {
     return this.pedidoRepo.find({ relations: ['produto', 'usuario'] });
   }
@@ -72,4 +78,35 @@ export class PedidoService {
   delete(id: number) {
     return this.pedidoRepo.delete(id);
   }
+
+
+
+//  ---- 07/10/2025 - By: gabbu
+
+ // NOVO MÉTODO: Atualiza o status do pedido
+  async updateStatus(id: number, newStatus: StatusPedido) {
+    const pedido = await this.pedidoRepo.findOneBy({ id });
+
+    if (!pedido) throw new Error('Pedido não encontrado');
+
+    // Verifica se o status é válido (embora o TypeORM já ajude nisso)
+    if (newStatus !== 'aprovado' && newStatus !== 'reprovado') {
+        throw new Error("Status inválido. Use 'aprovado' ou 'reprovado'.");
+    }
+
+    // LÓGICA DE PAGAMENTO SERÁ IMPLEMENTADA AQUI MAIS TARDE
+    
+    // Atualiza o status
+    pedido.status = newStatus;
+
+    return this.pedidoRepo.save(pedido);
+  }
+
+
+
 }
+
+
+
+
+ 

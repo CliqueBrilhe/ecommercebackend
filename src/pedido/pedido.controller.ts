@@ -1,6 +1,6 @@
-import { Controller, Get, Post, Put, Delete, Body, Param } from '@nestjs/common';
+import { Controller, Get, Post, Put,Patch, Delete, Body, Param } from '@nestjs/common';
 import { PedidoService } from './pedido.service';
-import { Pedido } from './pedido.entity';
+import { Pedido, type StatusPedido} from './pedido.entity';
 
 @Controller('pedidos')
 export class PedidoController {
@@ -35,4 +35,21 @@ export class PedidoController {
   delete(@Param('id') id: number) {
     return this.pedidoService.delete(id);
   }
+
+
+  //  07/10/2025 - by: gabbu
+
+   // NOVO ENDPOINT: Rota para atualizar o status (usando PATCH)
+  @Patch(':id/status')
+  async updateStatus(
+    @Param('id') id: number,
+    @Body('status') status: StatusPedido, // Espera o campo 'status' no Body
+  ) {
+    // Adicionamos uma validação básica para garantir que o 'status' foi enviado
+    if (!status) {
+        throw new Error('O novo status deve ser fornecido no corpo da requisição.');
+    }
+    return this.pedidoService.updateStatus(id, status);
+  }
+
 }
