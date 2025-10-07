@@ -16,7 +16,10 @@ export class Pedido {
   @Column('int')
   quantidade: number;
 
-  @Column('timestamp', { default: () => 'CURRENT_TIMESTAMP' })
+  // CORREÇÃO 1: 'timestamp' não é suportado pelo SQLite.
+  // Usamos 'text' para armazenar a data como string ISO 8601, compatível com ambos.
+  // A função padrão (default) garante que o valor seja salvo na criação.
+  @Column('text', { default: () => 'CURRENT_TIMESTAMP' })
   data: Date;
 
   @Column('decimal', { precision: 10, scale: 2 })
@@ -25,7 +28,13 @@ export class Pedido {
   @Column('decimal', { precision: 10, scale: 2 })
   valorFrete: number;
 
-  @Column({ type: 'enum', enum: ['em análise', 'aprovado', 'reprovado'], default: 'em análise' })
+  // CORREÇÃO 2: 'enum' não é suportado pelo SQLite.
+  // Usamos 'text' para o tipo de coluna no DB, mas mantemos o 'enum' para validação do TypeORM.
+  @Column({ 
+    type: 'text', 
+    enum: ['em análise', 'aprovado', 'reprovado'], 
+    default: 'em análise' 
+  })
   status: StatusPedido;
 
   @ManyToOne(() => Usuario)
