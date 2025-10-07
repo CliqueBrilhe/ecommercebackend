@@ -1,3 +1,8 @@
+//  Para rodar a aplicação e conectar ao Banco de dados local: npm run start:dev
+/// Para rodar a aplicação e conectar com o banco de dados potsgres: NODE_ENV=production npm run start
+
+
+
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -33,7 +38,7 @@ const isProduction = process.env.NODE_ENV === 'production';
       // Usa o nome do BD Postgres na nuvem, ou um arquivo local para o SQLite.
       database: isProduction 
         ? process.env.DB_NAME || 'ecommerce_local'
-        : 'ecommerce_local_test.sqlite', // O arquivo SQLite será criado aqui!
+        : 'banco_local_test.sqlite', // O arquivo SQLite será criado aqui!
 
       // 4. Opções de Conexão Comuns
       autoLoadEntities: true,   
