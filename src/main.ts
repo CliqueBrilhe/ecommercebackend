@@ -1,3 +1,7 @@
+//  Para rodar a aplicação e conectar ao Banco de dados local: npm run start:dev
+/// Para rodar a aplicação e conectar com o banco de dados potsgres: NODE_ENV=production npm run start
+
+
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { join } from 'path';
