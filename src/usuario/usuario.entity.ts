@@ -25,6 +25,6 @@ export class Usuario {
   @Column()
   senha: string;
 
-  @Column({ type: 'enum', enum: ['admin', 'comum'], default: 'comum' })
+  @Column({ type: 'simple-enum', enum: ['admin', 'comum'], default: 'comum' })
   tipoUsuario: TipoUsuario;
 }

@@ -16,7 +16,7 @@ export class Pedido {
   @Column('int')
   quantidade: number;
 
-  @Column('timestamp', { default: () => 'CURRENT_TIMESTAMP' })
+  @Column( { default: () => 'CURRENT_TIMESTAMP' })
   data: Date;
 
   @Column('decimal', { precision: 10, scale: 2 })
@@ -25,7 +25,7 @@ export class Pedido {
   @Column('decimal', { precision: 10, scale: 2 })
   valorFrete: number;
 
-  @Column({ type: 'enum', enum: ['em análise', 'aprovado', 'reprovado'], default: 'em análise' })
+  @Column({ type: 'simple-enum', enum: ['em análise', 'aprovado', 'reprovado'], default: 'em análise' })
   status: StatusPedido;
 
   @ManyToOne(() => Usuario)

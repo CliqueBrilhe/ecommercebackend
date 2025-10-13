@@ -1,6 +1,8 @@
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
+// Boa prática: usar caminhos relativos para importações dentro do seu projeto
+import { Categoria } from 'src/categoria/categoria.entity';
 
-@Entity()
+@Entity({ name: 'produto' }) // É uma boa prática nomear a tabela no plural
 export class Produto {
   @PrimaryGeneratedColumn()
   id: number;
@@ -29,12 +31,21 @@ export class Produto {
   @Column('decimal', { precision: 5, scale: 2 })
   profundidade: number;
 
-  @Column('text', { array: true, nullable: false, default: () => "'{}'" })
+  /**
+   * CORREÇÃO AQUI:
+   * 'simple-array' salva o array como uma string separada por vírgulas.
+   * Isso garante compatibilidade entre PostgreSQL e SQLite.
+   * O TypeORM cuida da conversão de string para array (e vice-versa) para você.
+   */
+  @Column('simple-array', { nullable: false, default: '' })
   imagens: string[];
 
   @Column('text')
   descricao: string;
-  
-  @Column({ nullable: true })   // 👈 nova coluna
-  categoria: string;
+
+  @ManyToOne(() => Categoria, (categoria) => categoria.produto, {
+    nullable: true, // Um produto pode não ter categoria
+    eager: true, // Carrega a categoria junto com o produto
+  })
+  categoria: Categoria;
 }
