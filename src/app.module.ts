@@ -10,6 +10,7 @@ import { PixModule } from './pix/pix.module';
 import { ImagemModule } from './imagens/imagem.module';
 import { EmailModule } from './email/email.module';
 import { CategoriaModule } from './categoria/categoria.module';
+import { CloudinaryModule } from './cloudinary/cloudinary.module';
 
 /**
  * Função para obter a configuração do TypeORM baseada no ambiente.
@@ -67,7 +68,8 @@ const getOrmConfig = (configService: ConfigService): TypeOrmModuleOptions => {
     PixModule,
     ImagemModule,
     EmailModule,
-    CategoriaModule
+    CategoriaModule,
+    CloudinaryModule
   ],
 })
 export class AppModule {}
