@@ -8,7 +8,7 @@ async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule); // 👈 tipa como Express
 
   app.enableCors({
-    origin: 'http://localhost:8080/',
+    origin: ['http://localhost:5173', 'http://localhost:8080'],
     credentials: true,
   });
 

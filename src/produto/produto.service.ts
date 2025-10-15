@@ -48,6 +48,7 @@ export class ProdutoService {
       .then((items) =>
         items.map((p) => ({
           ...p,
+          categoria: p.categoria ? p.categoria.id : null,
           imagens: Array.isArray(p.imagens) ? p.imagens : [],
         })),
       );
