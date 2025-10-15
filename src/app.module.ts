@@ -7,12 +7,12 @@ import { ProdutoModule } from './produto/produto.module';
 import { UsuarioModule } from './usuario/usuario.module';
 import { PedidoModule } from './pedido/pedido.module';
 import { PixModule } from './pix/pix.module';
-import { ImagemModule } from './imagens/imagem.module';
+// import { ImagemModule } from './imagens/imagem.module';
 import { EmailModule } from './email/email.module';
 import { CategoriaModule } from './categoria/categoria.module';
 import { CloudinaryModule } from './cloudinary/cloudinary.module';
 import { BlingModule } from './bling/bling.module';
-import { BlingTestModule } from './bling/bling-test-module';
+import { BlingSyncModule } from './bling/syncs/bling-sync.module';
 
 /**
  * Função para obter a configuração do TypeORM baseada no ambiente.
@@ -68,12 +68,12 @@ const getOrmConfig = (configService: ConfigService): TypeOrmModuleOptions => {
     UsuarioModule,
     PedidoModule,
     PixModule,
-    ImagemModule,
+    // ImagemModule,
     EmailModule,
     CategoriaModule,
     CloudinaryModule,
     BlingModule,
-    BlingTestModule
+    BlingSyncModule
   ],
 })
 export class AppModule {}
