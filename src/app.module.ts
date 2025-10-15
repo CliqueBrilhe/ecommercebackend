@@ -11,6 +11,8 @@ import { ImagemModule } from './imagens/imagem.module';
 import { EmailModule } from './email/email.module';
 import { CategoriaModule } from './categoria/categoria.module';
 import { CloudinaryModule } from './cloudinary/cloudinary.module';
+import { BlingModule } from './bling/bling.module';
+import { BlingTestModule } from './bling/bling-test-module';
 
 /**
  * Função para obter a configuração do TypeORM baseada no ambiente.
@@ -33,7 +35,7 @@ const getOrmConfig = (configService: ConfigService): TypeOrmModuleOptions => {
       autoLoadEntities: true,
       // 'synchronize' deve ser false em produção para evitar perda de dados.
       // Migrations devem ser usadas para atualizar o schema do banco de dados.
-      synchronize: true,
+      synchronize: false,
     };
   } else {
     // Configuração para o ambiente de desenvolvimento (SQLite local)
@@ -69,7 +71,9 @@ const getOrmConfig = (configService: ConfigService): TypeOrmModuleOptions => {
     ImagemModule,
     EmailModule,
     CategoriaModule,
-    CloudinaryModule
+    CloudinaryModule,
+    BlingModule,
+    BlingTestModule
   ],
 })
 export class AppModule {}
