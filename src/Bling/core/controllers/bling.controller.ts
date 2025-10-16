@@ -1,6 +1,6 @@
 // src/bling/core/bling.controller.ts
 import { Controller, Get } from '@nestjs/common';
-import { BlingService } from './bling.service';
+import { BlingService } from '../services/bling.service';
 
 
 @Controller('bling')

@@ -1,8 +1,8 @@
 // src/bling/core/bling.module.ts
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { BlingController } from './bling.controller';
-import { BlingService } from './bling.service';
+import { BlingController } from './core/controllers/bling.controller';
+import { BlingService } from './core/services/bling.service';
 
 @Module({
   imports: [

@@ -17,12 +17,20 @@ export class Category {
   @ApiProperty({ description: 'ID da categoria' })
   id: number;
 
+  @ApiProperty({ description: 'ID da categoria no Bling', required: false })
+  @Column({ type: 'bigint', nullable: true, unique: true })
+  blingId?: number;
+
   @Column({ type: 'varchar', length: 100, unique: true, nullable: false })
   @ApiProperty({ description: 'Nome da categoria' })
   name: string;
 
   @Column({ type: 'varchar', length: 255, nullable: true })
-  @ApiProperty({ description: 'Caminho ou slug da categoria', required: false, nullable: true })
+  @ApiProperty({
+    description: 'Caminho ou slug da categoria',
+    required: false,
+    nullable: true,
+  })
   path: string;
 
   @Column({ type: 'integer', default: 0 })
@@ -34,15 +42,26 @@ export class Category {
     onDelete: 'SET NULL',
   })
   @JoinColumn({ name: 'parent_id' })
-  @ApiProperty({ description: 'Categoria pai', required: false, nullable: true, type: () => Category })
+  @ApiProperty({
+    description: 'Categoria pai',
+    required: false,
+    nullable: true,
+    type: () => Category,
+  })
   parent?: Category | null;
 
   @OneToMany(() => Category, (category) => category.parent)
-  @ApiProperty({ description: 'Subcategorias (children)', type: () => [Category] })
+  @ApiProperty({
+    description: 'Subcategorias (children)',
+    type: () => [Category],
+  })
   children: Category[];
 
   @OneToMany(() => Product, (product) => product.category)
-  @ApiProperty({ description: 'Produtos associados a esta categoria', type: () => [Product] })
+  @ApiProperty({
+    description: 'Produtos associados a esta categoria',
+    type: () => [Product],
+  })
   products: Product[];
 
   @CreateDateColumn({ name: 'created_at' })
@@ -50,7 +69,10 @@ export class Category {
   createdAt: Date;
 
   @UpdateDateColumn({ name: 'updated_at' })
-  @ApiProperty({ description: 'Data da última atualização da categoria', readOnly: true })
+  @ApiProperty({
+    description: 'Data da última atualização da categoria',
+    readOnly: true,
+  })
   updatedAt: Date;
 }
 
