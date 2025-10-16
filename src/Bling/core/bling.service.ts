@@ -10,35 +10,28 @@ export class BlingService {
 
   constructor() {
     const access = process.env.BLING_ACCESS_TOKEN?.trim();
-    const refresh = process.env.BLING_REFRESH_TOKEN?.trim();
-
-    if (access) {
-      this.accessToken = access;
-      this.logger.log('Usando BLING_ACCESS_TOKEN');
-    } else if (refresh) {
-      this.accessToken = refresh;
-      this.logger.warn(
-        'BLING_ACCESS_TOKEN ausente ou expirado. Usando BLING_REFRESH_TOKEN como fallback',
-      );
-    } else {
-      throw new Error(
-        'Nenhum token Bling definido no .env. Configure BLING_ACCESS_TOKEN ou BLING_REFRESH_TOKEN',
-      );
+    if (!access) {
+      throw new Error('Nenhum token Bling definido no .env. Configure BLING_ACCESS_TOKEN');
     }
+    this.accessToken = access;
+    this.logger.log('Usando BLING_ACCESS_TOKEN');
   }
 
   // Método genérico para requisições GET à API do Bling
-  async get<T = any>(endpoint: string): Promise<T> {
-    const url = `${this.baseUrl}${endpoint}`;
-    const res = await axios.get(url, {
-      params: {
-        apikey: this.accessToken, // ✅ Bling espera o token aqui
-      },
-      headers: {
-        Accept: 'application/json',
-      },
-    });
-    return res.data;
+   async get<T = any>(endpoint: string, params?: Record<string, any>): Promise<T> {
+    try {
+      const response = await axios.get(`${this.baseUrl}${endpoint}`, {
+        params,
+        headers: {
+          Accept: 'application/json',
+          Authorization: `Bearer ${this.accessToken}`, // segue a doc
+        },
+      });
+      return response.data;
+    } catch (err: any) {
+      this.logger.error('Erro ao buscar dados da Bling:', err.response?.data || err.message);
+      throw err;
+    }
   }
 
   // Método para buscar todos os produtos da Bling
