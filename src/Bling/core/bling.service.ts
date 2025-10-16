@@ -1,29 +1,37 @@
 // src/bling/core/bling.service.ts
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import axios from 'axios';
 
 @Injectable()
 export class BlingService {
+  private readonly logger = new Logger(BlingService.name);
   private readonly baseUrl = 'https://api.bling.com.br/Api/v3';
   private readonly accessToken: string;
 
   constructor() {
-    this.accessToken = process.env.BLING_ACCESS_TOKEN?.trim() || '';
-    if (!this.accessToken) {
-      throw new Error('Bling access token não definido no .env');
+    const access = process.env.BLING_ACCESS_TOKEN?.trim();
+    if (!access) {
+      throw new Error('Nenhum token Bling definido no .env. Configure BLING_ACCESS_TOKEN');
     }
+    this.accessToken = access;
+    this.logger.log('Usando BLING_ACCESS_TOKEN');
   }
 
   // Método genérico para requisições GET à API do Bling
-  async get<T = any>(endpoint: string): Promise<T> {
-    const url = `${this.baseUrl}${endpoint}`;
-    const res = await axios.get(url, {
-      headers: {
-        Accept: 'application/json',
-        Authorization: `Bearer ${this.accessToken}`,
-      },
-    });
-    return res.data;
+   async get<T = any>(endpoint: string, params?: Record<string, any>): Promise<T> {
+    try {
+      const response = await axios.get(`${this.baseUrl}${endpoint}`, {
+        params,
+        headers: {
+          Accept: 'application/json',
+          Authorization: `Bearer ${this.accessToken}`, // segue a doc
+        },
+      });
+      return response.data;
+    } catch (err: any) {
+      this.logger.error('Erro ao buscar dados da Bling:', err.response?.data || err.message);
+      throw err;
+    }
   }
 
   // Método para buscar todos os produtos da Bling
