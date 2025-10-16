@@ -2,15 +2,19 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Produto } from './produto.entity';
+import { CreateProdutoDto } from './dto/create-produto.dto';
+import { Categoria } from 'src/categoria/categoria.entity';
 
 @Injectable()
 export class ProdutoService {
   constructor(
+    
     @InjectRepository(Produto)
     private produtoRepo: Repository<Produto>,
+    @InjectRepository(Categoria)
+    private categoriaRepo: Repository<Categoria>,
   ) {}
 
-  
   async getCategorias(): Promise<string[]> {
     const result = await this.produtoRepo
       .createQueryBuilder('produto')
@@ -23,20 +27,40 @@ export class ProdutoService {
       .map((r: { categoria: string }) => (r.categoria ?? '').trim())
       .filter((c) => c.length > 0);
   }
-  create(produto: Produto) {
-    return this.produtoRepo.save(produto);
-  }
-findAll() {
-  return this.produtoRepo.find().then(items =>
-    items.map(p => ({ ...p, imagens: Array.isArray(p.imagens) ? p.imagens : [] }))
-  );
-}
 
-findOne(id: number) {
-  return this.produtoRepo.findOneBy({ id }).then(p =>
-    p ? { ...p, imagens: Array.isArray(p.imagens) ? p.imagens : [] } : null
-  );
-}
+  async create(createProdutoDto: CreateProdutoDto) {
+    const { categoriaId, ...resto } = createProdutoDto;
+
+    const categoria = await this.categoriaRepo.findOne({
+      where: { id: categoriaId },
+    });
+
+    const novoProduto = this.produtoRepo.create({
+      ...resto,
+      categoria: categoria ?? undefined,
+    });
+
+    return this.produtoRepo.save(novoProduto);
+  }
+  findAll() {
+    return this.produtoRepo
+      .find()
+      .then((items) =>
+        items.map((p) => ({
+          ...p,
+          categoria: p.categoria ? p.categoria.id : null,
+          imagens: Array.isArray(p.imagens) ? p.imagens : [],
+        })),
+      );
+  }
+
+  findOne(id: number) {
+    return this.produtoRepo
+      .findOneBy({ id })
+      .then((p) =>
+        p ? { ...p, imagens: Array.isArray(p.imagens) ? p.imagens : [] } : null,
+      );
+  }
 
   update(id: number, produto: Partial<Produto>) {
     return this.produtoRepo.update(id, produto);
@@ -45,5 +69,4 @@ findOne(id: number) {
   delete(id: number) {
     return this.produtoRepo.delete(id);
   }
-
 }
