@@ -2,8 +2,8 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ProductController } from './product.controller';
-import { Product } from './product.entity';
-import { Category } from '../Category/category.entity';
+import { Product } from '../Product/entities/product.entity';
+import { Category } from '../Category/entities/category.entity';
 import { CloudinaryModule } from 'src/Core/cloudinary/cloudinary.module';
 import { ProductService } from './product.service';
 

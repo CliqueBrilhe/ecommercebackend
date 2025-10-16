@@ -1,7 +1,7 @@
 // src/order/order.entity.ts
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
-import { Product } from '../../Product/product.entity';
-import { User } from '../../user/user.entity';
+import { Product } from '../../Product/entities/product.entity';
+import { User } from '../../User/entities/user.entity';
 
 export type OrderStatus = 'under_review' | 'approved' | 'rejected';
 

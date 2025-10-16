@@ -3,8 +3,8 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Order } from './entities/order.entity';
-import { Product } from '../Product/product.entity';
-import { User } from '../user/user.entity';
+import { Product } from '../Product/entities/product.entity';
+import { User } from '../User/entities/user.entity';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 

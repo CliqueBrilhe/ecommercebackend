@@ -11,8 +11,8 @@ import { PixModule } from './Modules/pix/pix.module';
 import { EmailModule } from './Core/email/email.module';
 import { CategoriaModule } from './Modules/Category/categoria.module';
 import { CloudinaryModule } from './Core/cloudinary/cloudinary.module';
-import { BlingModule } from './bling/bling.module';
-import { BlingSyncModule } from './bling/syncs/bling-sync.module';
+import { BlingModule } from './Bling/bling.module';
+import { BlingSyncModule } from './Bling/sync/bling-sync.module';
 
 /**
  * Função para obter a configuração do TypeORM baseada no ambiente.
