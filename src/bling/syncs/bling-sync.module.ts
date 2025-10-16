@@ -1,7 +1,7 @@
 // src/bling/syncs/bling-sync.module.ts
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Produto } from 'src/produto/produto.entity';
+import { Produto } from 'src/Modules/produto/produto.entity';
 import { Categoria } from 'src/categoria/categoria.entity';
 import { BlingProdutosSyncService } from './bling-prudutos-sync.service';
 import { BlingCategoriasSyncService } from './bling-categorias-sync.service';

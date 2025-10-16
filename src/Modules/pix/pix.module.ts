@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
-import { PixController } from '../pix/pix.controller';
-import { PixService } from '../pix/pix.service';
+import { PixController } from './pix.controller';
+import { PixService } from './pix.service';
 
 @Module({
   controllers: [PixController],

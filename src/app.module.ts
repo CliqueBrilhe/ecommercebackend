@@ -3,14 +3,14 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
 
-import { ProdutoModule } from './produto/produto.module';
-import { UsuarioModule } from './usuario/usuario.module';
-import { PedidoModule } from './pedido/pedido.module';
-import { PixModule } from './pix/pix.module';
+import { ProdutoModule } from './Modules/Product/produto.module';
+import { UsuarioModule } from './Modules/usuario/usuario.module';
+import { PedidoModule } from './Modules/pedido/pedido.module';
+import { PixModule } from './Modules/pix/pix.module';
 // import { ImagemModule } from './imagens/imagem.module';
-import { EmailModule } from './email/email.module';
-import { CategoriaModule } from './categoria/categoria.module';
-import { CloudinaryModule } from './cloudinary/cloudinary.module';
+import { EmailModule } from './Core/email/email.module';
+import { CategoriaModule } from './Modules/Category/categoria.module';
+import { CloudinaryModule } from './Core/cloudinary/cloudinary.module';
 import { BlingModule } from './bling/bling.module';
 import { BlingSyncModule } from './bling/syncs/bling-sync.module';
 

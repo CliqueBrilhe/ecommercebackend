@@ -1,5 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
-import { Produto } from '../produto/produto.entity';
+import { Produto } from '../Product/produto.entity';
 import { Usuario } from '../usuario/usuario.entity';
 
 export type StatusPedido = 'em análise' | 'aprovado' | 'reprovado';

@@ -3,7 +3,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import axios from 'axios';
-import { Produto } from 'src/produto/produto.entity';
+import { Produto } from 'src/Modules/produto/produto.entity';
 import { Categoria } from 'src/categoria/categoria.entity';
 
 /**

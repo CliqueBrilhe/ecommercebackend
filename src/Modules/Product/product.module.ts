@@ -4,7 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ProductController } from './product.controller';
 import { Product } from './product.entity';
 import { Category } from 'src/categoria/categoria.entity';
-import { CloudinaryModule } from 'src/cloudinary/cloudinary.module';
+import { CloudinaryModule } from 'src/Core/cloudinary/cloudinary.module';
 import { ProductService } from './product.service';
 
 @Module({
