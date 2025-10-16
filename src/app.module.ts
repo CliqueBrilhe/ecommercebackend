@@ -3,16 +3,13 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
 
-import { ProdutoModule } from './Modules/Product/produto.module';
-import { UsuarioModule } from './Modules/User/usuario.module';
-import { PedidoModule } from './Modules/Order/pedido.module';
-import { PixModule } from './Modules/pix/pix.module';
-// import { ImagemModule } from './imagens/imagem.module';
-import { EmailModule } from './Core/email/email.module';
-import { CategoriaModule } from './Modules/Category/categoria.module';
-import { CloudinaryModule } from './Core/cloudinary/cloudinary.module';
-import { BlingModule } from './Bling/bling.module';
-import { BlingSyncModule } from './Bling/sync/bling-sync.module';
+import { BlingModule } from './Bling/core/bling.module';
+import { ProductModule } from './Modules/Product/product.module';
+import { CategoryModule } from './Modules/Category/category.module';
+import { UserModule } from './Modules/User/user.module';
+import { OrderModule } from './Modules/Order/order.module';
+
+
 
 /**
  * Função para obter a configuração do TypeORM baseada no ambiente.
@@ -64,16 +61,11 @@ const getOrmConfig = (configService: ConfigService): TypeOrmModuleOptions => {
     }),
 
     // Módulos da sua aplicação.
-    ProdutoModule,
-    UsuarioModule,
-    PedidoModule,
-    PixModule,
-    // ImagemModule,
-    EmailModule,
-    CategoriaModule,
-    CloudinaryModule,
     BlingModule,
-    BlingSyncModule
-  ],
+    ProductModule,
+    CategoryModule,
+    UserModule,
+    OrderModule,
+  ]
 })
 export class AppModule {}
