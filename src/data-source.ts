@@ -1,10 +1,10 @@
 import 'dotenv/config';
 import { DataSource } from 'typeorm';
 
-import { User } from './Modules/User/entities/user.entity';
-import { Product } from './Modules/Product/entities/product.entity';
-import { Category } from './Modules/Category/entities/category.entity';
-import { Order } from './Modules/Order/entities/order.entity';
+import { User } from '@user/user.entity';
+import { Product } from '@product/product.entity';
+import { Category } from '@category/category.entity';
+import { Order } from '@order/order.entity';
 
 export const dataSource = new DataSource({
   type: 'postgres',
@@ -13,5 +13,6 @@ export const dataSource = new DataSource({
   synchronize: false,
   logging: ['error'],
   entities: [User, Product, Category, Order],
-  migrations: ['src/migrations/*.ts'],
+  migrations: ['dist/migrations/*.js'],
+
 });
