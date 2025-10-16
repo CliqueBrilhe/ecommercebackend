@@ -1,8 +1,10 @@
 import 'dotenv/config';
 import { DataSource } from 'typeorm';
 
-import { Produto } from './produto/produto.entity';
-import { Categoria } from './categoria/categoria.entity';
+import { User } from '@user/user.entity';
+import { Product } from '@product/product.entity';
+import { Category } from '@category/category.entity';
+import { Order } from '@order/order.entity';
 
 export const dataSource = new DataSource({
   type: 'postgres',
@@ -10,6 +12,7 @@ export const dataSource = new DataSource({
   ssl: { rejectUnauthorized: false },
   synchronize: false,
   logging: ['error'],
-  entities: [Produto, Categoria],
-  migrations: ['src/migrations/*.ts'],
+  entities: [User, Product, Category, Order],
+  migrations: ['dist/migrations/*.js'],
+
 });
