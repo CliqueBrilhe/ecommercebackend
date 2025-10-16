@@ -4,8 +4,8 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
 
 import { ProdutoModule } from './Modules/Product/produto.module';
-import { UsuarioModule } from './Modules/usuario/usuario.module';
-import { PedidoModule } from './Modules/pedido/pedido.module';
+import { UsuarioModule } from './Modules/User/usuario.module';
+import { PedidoModule } from './Modules/Order/pedido.module';
 import { PixModule } from './Modules/pix/pix.module';
 // import { ImagemModule } from './imagens/imagem.module';
 import { EmailModule } from './Core/email/email.module';
