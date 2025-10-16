@@ -27,7 +27,8 @@ export class OrderService {
 
     if (!product) throw new Error('Produto não encontrado');
     if (!user) throw new Error('Usuário não encontrado');
-    if (product.quantity < quantity) throw new Error('Estoque insuficiente');
+    if (product.stock < quantity) throw new Error('Estoque insuficiente');
+
 
     const order = this.orderRepo.create({
       product,
@@ -38,7 +39,7 @@ export class OrderService {
       status: 'under_review',
     });
 
-    product.quantity -= quantity;
+    product.stock -= quantity;
     await this.productRepo.save(product);
 
     return this.orderRepo.save(order);

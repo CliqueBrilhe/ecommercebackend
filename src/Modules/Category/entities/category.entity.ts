@@ -9,7 +9,7 @@ import {
   OneToMany,
   JoinColumn,
 } from 'typeorm';
-import { Product } from '../Product/product.entity';
+import { Product } from '../../Product/entities/product.entity';
 
 @Entity({ name: 'category' })
 export class Category {

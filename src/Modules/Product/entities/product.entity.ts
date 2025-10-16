@@ -7,7 +7,7 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { Category } from '../Category/category.entity';
+import { Category } from '../../Category/entities/category.entity';
 
 @Entity({ name: 'product' })
 export class Product {
@@ -28,6 +28,9 @@ export class Product {
 
   @Column('decimal', { precision: 10, scale: 2 })
   price: number;
+
+   @Column({ type: 'int', default: 0 })
+  stock: number; 
 
   @Column('int', { default: 0 })
   promotion: number;
