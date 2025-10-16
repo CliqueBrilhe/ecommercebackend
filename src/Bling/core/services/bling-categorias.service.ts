@@ -8,7 +8,7 @@ export class BlingCategoriasService {
 
   // Substitua pelo seu token real do Bling ou use variáveis de ambiente
   private readonly API_URL = 'https://api.bling.com.br/Api/v3/categorias/produtos';
-  private readonly API_TOKEN = process.env.BLING_API_TOKEN || 'YOUR_BLING_TOKEN';
+  private readonly API_TOKEN = process.env.BLING_ACCESS_TOKEN || 'YOUR_BLING_TOKEN';
 
   async getAllCategories(page = 1, limit = 100): Promise<any[]> {
     const categories: any[] = [];

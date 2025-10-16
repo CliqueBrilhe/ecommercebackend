@@ -4,6 +4,9 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
 
 import { BlingModule } from './Bling/bling.module';
+import { BlingSyncModule } from './Bling/sync/sync.module';
+
+
 import { ProductModule } from './Modules/Product/product.module';
 import { CategoryModule } from './Modules/Category/category.module';
 import { UserModule } from './Modules/User/user.module';
@@ -46,6 +49,7 @@ const getOrmConfig = (configService: ConfigService): TypeOrmModuleOptions => {
     CategoryModule,
     UserModule,
     OrderModule,
+    BlingSyncModule,
   ],
 })
 export class AppModule {}

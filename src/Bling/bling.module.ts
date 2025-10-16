@@ -5,8 +5,7 @@ import { BlingController } from './core/controllers/bling.controller';
 import { BlingService } from './core/services/bling.service';
 
 @Module({
-  imports: [
-  ],
+  imports: [],
   controllers: [BlingController],
   providers: [BlingService],
   exports: [BlingService],

@@ -2,7 +2,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Category } from '@category/category.entity';
+import { Category } from '../../../Modules/Category/entities/category.entity';
 import { BlingCategoriasService } from '../../core/services/bling-categorias.service';
 
 @Injectable()
@@ -17,15 +17,23 @@ export class BlingCategoriasSyncService {
 
   async syncCategories(): Promise<void> {
     this.logger.log('Iniciando sincronização de categorias do Bling...');
-    
-    const blingCategories = await this.blingCategoriasService.getAllCategories();
+
+    let blingCategories;
+    try {
+      blingCategories = await this.blingCategoriasService.getAllCategories();
+    } catch (error: any) {
+      // Log limpo apenas com informações importantes
+      this.logger.error(
+        `Erro ao buscar categorias do Bling: ${error.response?.status || 'N/A'} - ${JSON.stringify(error.response?.data) || error.message}`
+      );
+      return; // Sai do sync se der erro
+    }
 
     const categoryMap = new Map<number, Category>();
 
     for (const blingCategory of blingCategories) {
       let category: Category | undefined;
 
-      // Busca categoria existente pelo blingId
       category = await this.categoryRepository.findOne({
         where: { blingId: blingCategory.id },
         relations: ['parent'],
@@ -39,7 +47,6 @@ export class BlingCategoriasSyncService {
       category.name = blingCategory.descricao;
       category.order = blingCategory.ordem || 0;
 
-      // Configura parent
       if (blingCategory.categoriaPai?.id && blingCategory.categoriaPai.id !== 0) {
         let parent = categoryMap.get(blingCategory.categoriaPai.id);
 
@@ -78,6 +85,7 @@ export class BlingCategoriasSyncService {
 /*
 Histórico de alterações:
 Edição: 16/10/2025
+- Adicionado tratamento de erro limpo para requisição ao Bling
 - Correção de tipos nulos no sync de categorias
 - Ajuste de parent para aceitar null
 --------------------------------------------
