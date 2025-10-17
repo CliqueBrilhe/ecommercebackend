@@ -1,5 +1,5 @@
 // src/bling/core/bling.controller.ts
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Post } from '@nestjs/common';
 import { BlingService } from '../services/bling.service';
 
 
@@ -7,12 +7,18 @@ import { BlingService } from '../services/bling.service';
 export class BlingController {
   constructor(
     private readonly blingService: BlingService,
+
   ) {}
 
   // Endpoint para testar a comunicação direta com a API da Bling
   @Get('produtos')
   async getProdutosDireto() {
     return this.blingService.getProducts();
+  }
+
+  @Get('categorias')
+  async getCategoriasDireto() {
+    return this.blingService.getCategories();
   }
 
 }
@@ -28,4 +34,3 @@ Expõe endpoints para:
 
 by: gabbu (github: gabriellesote)
 */
-
