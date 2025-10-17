@@ -32,6 +32,11 @@ export class BlingCategoriasSyncService {
       return;
     }
 
+    // Contadores para relatório final
+    let criadas = 0;
+    let atualizadas = 0;
+    let vinculadas = 0;
+
     // 2️⃣ Criar/atualizar categorias SEM pai (primeiro)
     for (const categoria of categoriasBling) {
       const { id, descricao, categoriaPai } = categoria;
@@ -49,10 +54,15 @@ export class BlingCategoriasSyncService {
       };
 
       if (categoriaExistente) {
-        await this.categoryRepository.update(categoriaExistente.id, dadosCategoria);
+        await this.categoryRepository.update(
+          categoriaExistente.id,
+          dadosCategoria,
+        );
+         atualizadas++;
       } else {
         categoriaExistente = this.categoryRepository.create(dadosCategoria);
         await this.categoryRepository.save(categoriaExistente);
+        criadas++;
       }
     }
 
@@ -71,10 +81,15 @@ export class BlingCategoriasSyncService {
       if (categoriaFilho && categoriaPai) {
         categoriaFilho.parent = categoriaPai;
         await this.categoryRepository.save(categoriaFilho);
+        vinculadas++;
       }
     }
 
-    this.logger.log('✅ Sincronização de categorias concluída com sucesso.');
+    // 4️⃣ Logs de resumo final
+    this.logger.log('✅ Sincronização de categorias concluída!');
+    this.logger.log(
+      `📊 Resumo: ${criadas} criadas | ${atualizadas} atualizadas | ${vinculadas} vinculadas como filhas.`,
+    );
   }
 }
 

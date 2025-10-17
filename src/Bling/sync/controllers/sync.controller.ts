@@ -1,7 +1,7 @@
 // src/Bling/sync/controllers/sync.controller.ts
 import { Controller, Post } from '@nestjs/common';
 import { BlingCategoriasSyncService } from '../services/bling-categorias-sync.service';
-import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiBody } from '@nestjs/swagger';
+import {  ApiOperation, ApiResponse} from '@nestjs/swagger';
 
 @Controller('bling/sync')
 export class SyncController {
@@ -9,7 +9,6 @@ export class SyncController {
 
 
   @Post('categorias')
-  @ApiTags('Bling Sync')
   @ApiOperation({ summary: 'Sincroniza categorias do Bling' })
   @ApiResponse({ status: 200, description: 'Sincronização concluída com sucesso.' })
   async syncCategorias() {
