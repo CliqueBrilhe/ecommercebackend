@@ -13,6 +13,12 @@ import { BlingService } from './core/services/bling.service';
 export class BlingModule {}
 
 
+
+
+
+
+
+
 /*
 🗓 16/10/2025
 🔧 Refatoração: reorganização do módulo principal do Bling para se adequar à estrutura modular (core/sync/utils).

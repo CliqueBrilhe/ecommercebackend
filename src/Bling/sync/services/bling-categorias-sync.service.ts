@@ -1,99 +1,102 @@
-// src/bling/sync/services/bling-categorias-sync.service.ts
+// src/Bling/sync/services/bling-categorias-sync.service.ts
 import { Injectable, Logger } from '@nestjs/common';
-import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { Category } from '../../../Modules/Category/entities/category.entity';
-import { BlingCategoriasService } from '../../core/services/bling-categorias.service';
+import { BlingService } from '../../core/services/bling.service';
 
 @Injectable()
 export class BlingCategoriasSyncService {
   private readonly logger = new Logger(BlingCategoriasSyncService.name);
 
   constructor(
-    private readonly blingCategoriasService: BlingCategoriasService,
+    private readonly blingService: BlingService,
     @InjectRepository(Category)
     private readonly categoryRepository: Repository<Category>,
   ) {}
 
-  async syncCategories(): Promise<void> {
-    this.logger.log('Iniciando sincronização de categorias do Bling...');
+  /**
+   * Sincroniza categorias do Bling com o banco local.
+   * - Cria novas categorias.
+   * - Atualiza existentes (por blingId).
+   * - Mantém hierarquia pai/filho.
+   */
+  async sincronizarCategorias(): Promise<void> {
+    this.logger.log('🔄 Iniciando sincronização de categorias com o Bling...');
 
-    let blingCategories;
-    try {
-      blingCategories = await this.blingCategoriasService.getAllCategories();
-    } catch (error: any) {
-      // Log limpo apenas com informações importantes
-      this.logger.error(
-        `Erro ao buscar categorias do Bling: ${error.response?.status || 'N/A'} - ${JSON.stringify(error.response?.data) || error.message}`
-      );
-      return; // Sai do sync se der erro
+    // 1️⃣ Buscar categorias da API do Bling
+    const response = await this.blingService.getCategories();
+    const categoriasBling = response?.data;
+    if (!Array.isArray(categoriasBling) || categoriasBling.length === 0) {
+      this.logger.warn('⚠️ Nenhuma categoria encontrada na API do Bling.');
+      return;
     }
 
-    const categoryMap = new Map<number, Category>();
+    // Contadores para relatório final
+    let criadas = 0;
+    let atualizadas = 0;
+    let vinculadas = 0;
 
-    for (const blingCategory of blingCategories) {
-      let category: Category | undefined;
+    // 2️⃣ Criar/atualizar categorias SEM pai (primeiro)
+    for (const categoria of categoriasBling) {
+      const { id, descricao, categoriaPai } = categoria;
 
-      category = await this.categoryRepository.findOne({
-        where: { blingId: blingCategory.id },
+      let categoriaExistente = await this.categoryRepository.findOne({
+        where: { blingId: id },
         relations: ['parent'],
-      }) || undefined;
+      });
 
-      if (!category) {
-        category = this.categoryRepository.create();
-        category.blingId = blingCategory.id;
-      }
+      // Dados base para inserção ou atualização
+      const dadosCategoria = {
+        name: descricao,
+        path: descricao.toLowerCase().replace(/\s+/g, '-'),
+        blingId: id,
+      };
 
-      category.name = blingCategory.descricao;
-      category.order = blingCategory.ordem || 0;
-
-      if (blingCategory.categoriaPai?.id && blingCategory.categoriaPai.id !== 0) {
-        let parent = categoryMap.get(blingCategory.categoriaPai.id);
-
-        if (!parent) {
-          parent = await this.categoryRepository.findOne({
-            where: { blingId: blingCategory.categoriaPai.id },
-          }) || undefined;
-
-          if (!parent) {
-            parent = this.categoryRepository.create({
-              blingId: blingCategory.categoriaPai.id,
-              name: 'Placeholder',
-              path: '',
-            });
-            await this.categoryRepository.save(parent);
-          }
-
-          categoryMap.set(parent.blingId!, parent);
-        }
-
-        category.parent = parent ?? null;
+      if (categoriaExistente) {
+        await this.categoryRepository.update(
+          categoriaExistente.id,
+          dadosCategoria,
+        );
+         atualizadas++;
       } else {
-        category.parent = null;
+        categoriaExistente = this.categoryRepository.create(dadosCategoria);
+        await this.categoryRepository.save(categoriaExistente);
+        criadas++;
       }
-
-      category.path = category.parent ? `${category.parent.path}/${category.name}` : category.name;
-
-      await this.categoryRepository.save(category);
-      categoryMap.set(category.blingId!, category);
     }
 
-    this.logger.log(`Sincronização concluída: ${blingCategories.length} categorias processadas.`);
+    // 3️⃣ Atualizar relacionamento pai-filho
+    for (const categoria of categoriasBling) {
+      if (!categoria.categoriaPai?.id) continue;
+
+      const categoriaFilho = await this.categoryRepository.findOne({
+        where: { blingId: categoria.id },
+      });
+
+      const categoriaPai = await this.categoryRepository.findOne({
+        where: { blingId: categoria.categoriaPai.id },
+      });
+
+      if (categoriaFilho && categoriaPai) {
+        categoriaFilho.parent = categoriaPai;
+        await this.categoryRepository.save(categoriaFilho);
+        vinculadas++;
+      }
+    }
+
+    // 4️⃣ Logs de resumo final
+    this.logger.log('✅ Sincronização de categorias concluída!');
+    this.logger.log(
+      `📊 Resumo: ${criadas} criadas | ${atualizadas} atualizadas | ${vinculadas} vinculadas como filhas.`,
+    );
   }
 }
 
 /*
-Histórico de alterações:
-Edição: 16/10/2025
-- Adicionado tratamento de erro limpo para requisição ao Bling
-- Correção de tipos nulos no sync de categorias
-- Ajuste de parent para aceitar null
+🕓 17/10/2025 - criação do serviço manual de sincronização de categorias
 --------------------------------------------
-Explicação da lógica:
-Este service sincroniza categorias do Bling para o banco local.
-- Verifica se a categoria já existe via blingId
-- Cria placeholders para categorias pai ainda não existentes
-- Atualiza nome, ordem e path (materialized)
-- Salva no banco
+Lógica: consulta categorias do Bling via BlingService, cria ou atualiza
+categorias locais (por blingId) e reconstrói a hierarquia pai-filho.
 by: gabbu (github: gabriellesote)
 */

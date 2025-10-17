@@ -4,13 +4,14 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
 
 import { BlingModule } from './Bling/bling.module';
-import { BlingSyncModule } from './Bling/sync/sync.module';
+
 
 
 import { ProductModule } from './Modules/Product/product.module';
 import { CategoryModule } from './Modules/Category/category.module';
 import { UserModule } from './Modules/User/user.module';
 import { OrderModule } from './Modules/Order/order.module';
+import { BlingSyncModule } from 'Bling/sync/bling-sync.module';
 
 /**
  * Função para obter a configuração do TypeORM baseada no ambiente.
@@ -30,7 +31,7 @@ const getOrmConfig = (configService: ConfigService): TypeOrmModuleOptions => {
       : false, // desenvolvimento: sem SSL
     autoLoadEntities: true,
     synchronize: !isProduction, // sincroniza schema só em dev
-    logging: !isProduction,
+    // logging: !isProduction,
   };
 };
 
@@ -49,7 +50,7 @@ const getOrmConfig = (configService: ConfigService): TypeOrmModuleOptions => {
     CategoryModule,
     UserModule,
     OrderModule,
-    BlingSyncModule,
+    BlingSyncModule
   ],
 })
 export class AppModule {}

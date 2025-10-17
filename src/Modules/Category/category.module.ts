@@ -5,17 +5,15 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Category } from './entities/category.entity';
 import { CategoryController } from './category.controller';
 import { CategoryService } from './category.service';
-import { BlingSyncModule } from '../../Bling/sync/sync.module';
-import { BlingCategoriasSyncService } from '../../Bling/sync/services/bling-categorias-sync.service';
+
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Category]),
-    BlingSyncModule, // ✅ importa o módulo que fornece BlingCategoriasService
   ],
   controllers: [CategoryController],
-  providers: [CategoryService, BlingCategoriasSyncService],
-  exports: [BlingCategoriasSyncService],
+  providers: [CategoryService],
+  exports: [CategoryService],
 })
 export class CategoryModule {}
 
