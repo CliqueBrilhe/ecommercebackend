@@ -1,14 +1,20 @@
 // src/Bling/sync/controllers/sync.controller.ts
-import { Controller, Post } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+
+import { Controller, Post, Get } from '@nestjs/common';
 import { BlingCategoriasSyncService } from '../services/bling-categorias-sync.service';
 import { BlingProdutosSyncService } from '../services/bling-produtos-sync.service';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { SyncLog } from '../entities/sync-log.entity';
 
 @Controller('bling/sync')
 export class SyncController {
   constructor(
     private readonly categoriasSyncService: BlingCategoriasSyncService,
     private readonly produtosSyncService: BlingProdutosSyncService,
+    @InjectRepository(SyncLog)
+    private readonly syncLogRepository: Repository<SyncLog>,
   ) {}
 
   @Post('categorias')
@@ -32,6 +38,23 @@ export class SyncController {
     await this.produtosSyncService.sincronizarProdutos();
     return { message: 'Sincronização de produtos concluída com sucesso.' };
   }
+
+
+@Get('status')
+async getSyncStatus() {
+  const lastLog = await this.syncLogRepository.find({
+    order: { executedAt: 'DESC' },
+    take: 5,
+  });
+
+  return {
+    message: 'Últimos registros de sincronização',
+    count: lastLog.length,
+    data: lastLog,
+  };
+
+}
+
 }
 
 /*

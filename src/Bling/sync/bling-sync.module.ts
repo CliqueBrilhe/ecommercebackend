@@ -8,15 +8,20 @@ import { SyncController } from './controllers/sync.controller';
 import { BlingProdutosSyncService } from './services/bling-produtos-sync.service';
 import { Product } from '@product/product.entity';
 
+import { SyncLog } from './entities/sync-log.entity';
+import { BlingAutoSyncService } from './services/bling-auto-sync.service';
+
+
 @Module({
-  imports: [TypeOrmModule.forFeature([Category, Product])],
+  imports: [TypeOrmModule.forFeature([Category, Product, SyncLog])],
   controllers: [SyncController],
-  providers: [BlingService, BlingCategoriasSyncService, BlingProdutosSyncService],
+  providers: [BlingService, BlingCategoriasSyncService, BlingProdutosSyncService, BlingAutoSyncService,],
 })
 export class BlingSyncModule {}
 
 /*
-🕓 17/10/2025 - módulo da sincronização de categorias
+🕓 17/10/2025 - add o módulo da sincronização de categorias
+🕓 20/10/2025 - add o módulo da sincronização automatica
 --------------------------------------------
 Lógica: integra o serviço e o controller responsáveis pela
 sincronização manual das categorias do Bling.

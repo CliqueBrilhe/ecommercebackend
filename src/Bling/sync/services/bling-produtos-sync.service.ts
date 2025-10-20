@@ -93,6 +93,7 @@ export class BlingProdutosSyncService {
           dadosSemCategoria,
         );
         atualizados++;
+        this.logger.log(`♻️ Produto atualizado: ${nome} (BlingID: ${id})`);
       } else {
         const dadosProdutoLimpo = {
           ...dadosProduto,
@@ -103,6 +104,7 @@ export class BlingProdutosSyncService {
         await this.productRepository.save(novoProduto);
         await this.productRepository.save(novoProduto);
         criados++;
+        this.logger.log(`🆕 Produto criado: ${nome} (BlingID: ${id})`);
       }
     }
 
