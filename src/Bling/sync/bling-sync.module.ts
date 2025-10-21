@@ -11,11 +11,16 @@ import { Product } from '@product/product.entity';
 import { SyncLog } from './entities/sync-log.entity';
 import { BlingAutoSyncService } from './services/bling-auto-sync.service';
 
-
 @Module({
   imports: [TypeOrmModule.forFeature([Category, Product, SyncLog])],
   controllers: [SyncController],
-  providers: [BlingService, BlingCategoriasSyncService, BlingProdutosSyncService, BlingAutoSyncService,],
+  providers: [
+    BlingService,
+    BlingCategoriasSyncService,
+    BlingProdutosSyncService,
+    BlingAutoSyncService,
+  ],
+  exports: [BlingProdutosSyncService],
 })
 export class BlingSyncModule {}
 
