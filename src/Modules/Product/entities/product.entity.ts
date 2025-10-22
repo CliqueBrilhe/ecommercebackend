@@ -74,6 +74,20 @@ export class Product {
   @ApiProperty({ description: 'Indica se o produto foi sincronizado com o Bling', default: false })
   synchronized: boolean;
 
+
+  // 👇 novo campo
+  @Column({
+    type: 'varchar',
+    length: 20,
+    default: 'active',
+  })
+  @ApiProperty({
+    description: 'Status do produto (active, to_verify, inactive)',
+    enum: ['active', 'to_verify', 'inactive'],
+    default: 'active',
+  })
+  status: 'active' | 'to_verify' | 'inactive';
+
   @UpdateDateColumn({ name: 'updated_at' })
   @ApiProperty({ description: 'Data da última atualização', readOnly: true })
   updatedAt: Date;

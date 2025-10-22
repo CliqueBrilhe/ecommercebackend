@@ -1,10 +1,7 @@
 // src/Core/utils/log-style.util.ts
 
-// 🎨 Códigos de cores ANSI
 export const colors = {
   reset: '\x1b[0m',
-
-  // Cores de texto
   black: '\x1b[30m',
   red: '\x1b[31m',
   green: '\x1b[32m',
@@ -13,8 +10,6 @@ export const colors = {
   magenta: '\x1b[35m',
   cyan: '\x1b[36m',
   white: '\x1b[37m',
-
-  // Cores brilhantes
   brightBlack: '\x1b[90m',
   brightRed: '\x1b[91m',
   brightGreen: '\x1b[92m',
@@ -23,27 +18,23 @@ export const colors = {
   brightMagenta: '\x1b[95m',
   brightCyan: '\x1b[96m',
   brightWhite: '\x1b[97m',
-
-  // Estilos
   bold: '\x1b[1m',
   underline: '\x1b[4m',
   inverse: '\x1b[7m',
 };
 
-// 🧩 Ícones padronizados por módulo
 export const moduleIcons = {
-  categories: '📦', // caixas → categorias
-  products: '🛍️', // sacolas → produtos
-  orders: '🧾', // nota fiscal → pedidos
-  invoices: '🪙', // moedas → notas fiscais
-  users: '👤', // usuário
-  sync: '🔄', // sincronização geral
+  categories: '📦',
+  products: '🛍️',
+  orders: '🧾',
+  invoices: '🪙',
+  users: '👤',
+  sync: '🔄',
   warning: '⚠️',
   success: '✅',
   error: '❌',
 };
 
-// 🪄 Funções helper para aplicar cor facilmente
 export function colorize(text: string, color: keyof typeof colors): string {
   return `${colors[color]}${text}${colors.reset}`;
 }
@@ -52,41 +43,45 @@ export function bold(text: string): string {
   return `${colors.bold}${text}${colors.reset}`;
 }
 
-// 💬 Função para exibir uma mensagem padronizada de log
+// ⏰ Função para formatar data/hora igual ao Nest
+function formatTimestamp(): string {
+  const now = new Date();
+  const date = now.toLocaleDateString('pt-BR');
+  const time = now.toLocaleTimeString('pt-BR');
+  return `${date}, ${time}`;
+}
+
+/**
+ * 💬 Log padronizado com hora, PID e módulo.
+ * Exemplo:
+ * [Nest] 61611  - 22/10/2025, 18:40:00     LOG [BlingSyncScheduler] 🔄 Sincronização concluída!
+ */
 export function styledLog(
   module: keyof typeof moduleIcons,
   message: string,
   color: keyof typeof colors = 'cyan',
 ) {
+  const pid = process.pid;
+  const timestamp = formatTimestamp();
   const icon = moduleIcons[module] || '💬';
-  console.log(`${colors[color]}${icon} ${message}${colors.reset}`);
+
+  // simulando o formato Nest
+  const prefix = `[Nest] ${pid}  - ${timestamp}`;
+  const tag = `[${module}]`;
+
+  console.log(
+    `${colors[color]}${prefix}     LOG ${tag} ${icon} ${message}${colors.reset}`,
+  );
 }
 
-
-
 /*
-📘 Exemplos de uso:
-
-import { colors, styledLog, moduleIcons } from 'src/Core/utils/log-style.util';
-
-// cores diretas:
-console.log(`${colors.green}✅ Sucesso!${colors.reset}`);
-console.log(`${colors.red}❌ Erro crítico${colors.reset}`);
-
-// estilo com helper:
-styledLog('products', 'Produtos sincronizados com sucesso!', 'green');
-styledLog('categories', 'Categorias atualizadas.', 'cyan');
-styledLog('sync', 'Execução finalizada.', 'brightMagenta');
-*/
-
-
-/*
-🗓 22/10/2025 - 16:05
-✨ Criação: utilitário de estilo para logs coloridos e padronizados.
+🗓 22/10/2025 - 18:50
+✨ Atualização: logs padronizados com timestamp e formato estilo NestJS.
 --------------------------------------------
 📘 Lógica:
-Define cores ANSI e ícones por módulo do sistema, permitindo criar logs
-visuais e consistentes em todos os serviços (Bling, Sync, Produtos, etc).
-Inclui funções helper para aplicar cor e reset automático.
+- Inclui hora e data local no formato brasileiro.
+- Mostra PID e módulo entre colchetes.
+- Mantém cores e ícones originais.
+- Uniformiza a saída com os logs oficiais do NestJS.
 edit by: gabbu (gabriellesote) ദ്ദി(˵ •̀ ᴗ - ˵ ) ✧
 */

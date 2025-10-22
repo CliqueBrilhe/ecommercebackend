@@ -1,11 +1,11 @@
-// src/Bling/sync/services/bling-produtos-sync.service.ts
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { Product } from '../../../Modules/Product/entities/product.entity';
 import { Category } from '../../../Modules/Category/entities/category.entity';
 import { BlingService } from '../../core/services/bling.service';
-import { SyncResult } from '../types/sync-result.interface'; // 👈 novo import
+import { SyncResult } from '../types/sync-result.interface';
+import { styledLog } from '../../../utils/log-style.util';
 
 @Injectable()
 export class BlingProdutosSyncService {
@@ -19,35 +19,86 @@ export class BlingProdutosSyncService {
     private readonly categoryRepository: Repository<Category>,
   ) {}
 
-  // 🔁 Usado pelo CRON e manualmente
+  /**
+   * Busca todas as páginas de produtos da API do Bling.
+   * Garante que nenhum produto seja ignorado, mesmo em grandes volumes.
+   */
+  async fetchAllProducts(): Promise<any[]> {
+    let page = 1;
+    let all: any[] = [];
+    let hasNext = true;
+
+    while (hasNext) {
+      const { produtos, hasNext: next } = await this.blingService.getProducts(page);
+      all = [...all, ...produtos];
+      hasNext = next;
+      page++;
+
+      // 🕒 Pausa de 300ms entre as páginas para evitar erro 429 (rate limit)
+      if (hasNext) {
+        await new Promise((resolve) => setTimeout(resolve, 300));
+      }
+    }
+
+    styledLog('products', `📦 Total de produtos obtidos: ${all.length}`, 'cyan');
+    return all;
+  }
+
+  /**
+   * Sincroniza todos os produtos entre o Bling e o banco local.
+   * Cria, atualiza e marca produtos ausentes com status "to_verify".
+   */
   async sincronizarProdutos(): Promise<SyncResult> {
-    this.logger.log('🔄 Iniciando sincronização de produtos com o Bling...');
-    const response = await this.blingService.getProducts();
-    const produtosBling = response?.data;
+    styledLog('products', '🔄 Iniciando sincronização completa de produtos...', 'cyan');
+
+    // 🔹 Busca todas as páginas da API
+    const produtosBling = await this.fetchAllProducts();
 
     if (!Array.isArray(produtosBling) || produtosBling.length === 0) {
-      this.logger.warn('⚠️ Nenhum produto encontrado na API do Bling.');
+      styledLog('warning', '⚠️ Nenhum produto encontrado na API do Bling.', 'brightYellow');
       return { createdCount: 0, updatedCount: 0 };
     }
 
-    let criados = 0;
-    let atualizados = 0;
-    let vinculados = 0;
+    const produtosLocais = await this.productRepository.find();
+    const idsBling = produtosBling.map((p) => p.id);
 
+    let criados = 0, atualizados = 0, marcados = 0;
+
+    // 🧩 Atualiza ou cria produtos
     for (const produto of produtosBling) {
-      const { result, linkedCategory } = await this.upsertFromWebhook(produto);
+      const { result } = await this.upsertFromWebhook(produto);
       if (result === 'created') criados++;
-      if (result === 'updated') atualizados++;
-      if (linkedCategory) vinculados++;
+      else if (result === 'updated') atualizados++;
     }
 
-    this.logger.log('✅ Sincronização de produtos concluída!');
-    this.logger.log(`📊 Resumo: ${criados} criados | ${atualizados} atualizados | ${vinculados} vinculados a categorias.`);
+    // 🗑️ Marca produtos locais que não existem mais no Bling
+    const produtosParaVerificar = produtosLocais.filter(
+      (p) => !idsBling.includes(p.blingId),
+    );
 
-    // 👇 retorno padronizado
+    if (produtosParaVerificar.length > 0) {
+      const idsRemovidos = produtosParaVerificar.map((p) => p.blingId);
+      await this.productRepository.update({ blingId: In(idsRemovidos) }, { status: 'to_verify' });
+      marcados = idsRemovidos.length;
+      styledLog(
+        'products',
+        `🚨 ${marcados} produtos marcados como "to_verify" (ausentes na API Bling).`,
+        'brightYellow',
+      );
+    }
+
+    styledLog(
+      'products',
+      `✅ Sincronização concluída: ${criados} criados | ${atualizados} atualizados | ${marcados} marcados.`,
+      'brightGreen',
+    );
+
     return { createdCount: criados, updatedCount: atualizados };
   }
 
+  /**
+   * Cria ou atualiza um produto individual (usado pela sync e webhooks).
+   */
   async upsertFromWebhook(data: any): Promise<{ result: 'created' | 'updated'; linkedCategory: boolean }> {
     const {
       id,
@@ -65,7 +116,9 @@ export class BlingProdutosSyncService {
 
     let categoriaLocal: Category | null = null;
     if (categoria?.id) {
-      categoriaLocal = await this.categoryRepository.findOne({ where: { blingId: categoria.id } });
+      categoriaLocal = await this.categoryRepository.findOne({
+        where: { blingId: categoria.id },
+      });
     }
 
     const base = {
@@ -79,34 +132,44 @@ export class BlingProdutosSyncService {
       images: imagemURL ? [imagemURL] : [],
       synchronized: true,
       status: situacao,
+      category: categoriaLocal ?? undefined,
     };
 
-    const existente = await this.productRepository.findOne({ where: { blingId: id }, relations: ['category'] });
+    const existente = await this.productRepository.findOne({
+      where: { blingId: id },
+      relations: ['category'],
+    });
 
     if (existente) {
       Object.assign(existente, base);
-      existente.category = categoriaLocal ?? existente.category ?? undefined;
       await this.productRepository.save(existente);
-      this.logger.log(`♻️ Produto atualizado: ${nome} (BlingID: ${id})`);
+      styledLog('products', `♻️ Produto atualizado: ${nome} (BlingID: ${id})`, 'green');
       return { result: 'updated', linkedCategory: !!categoriaLocal };
     }
 
-    const novo = this.productRepository.create({ ...base, category: categoriaLocal ?? undefined });
+    const novo = this.productRepository.create(base);
     await this.productRepository.save(novo);
-    this.logger.log(`🆕 Produto criado: ${nome} (BlingID: ${id})`);
+    styledLog('products', `🆕 Produto criado: ${nome} (BlingID: ${id})`, 'brightGreen');
     return { result: 'created', linkedCategory: !!categoriaLocal };
   }
 
+  /**
+   * Remoção direta (usado pelo webhook de exclusão).
+   */
   async removeByBlingId(blingId: number) {
     await this.productRepository.delete({ blingId });
-    this.logger.warn(`🗑️ Produto removido (BlingID: ${blingId})`);
+    styledLog('products', `🗑️ Produto removido via webhook (BlingID: ${blingId})`, 'red');
   }
 }
 
 /*
-🗓 22/10/2025 - 14:45
-Refatoração: sincronizarProdutos() agora retorna SyncResult com contagens.
+🗓 22/10/2025 - 21:10
+🔧 Correção final: paginação completa + delay entre páginas + marcação segura "to_verify".
 --------------------------------------------
-Lógica: retorna quantos produtos foram criados/atualizados, permitindo logs detalhados no scheduler.
-edit by: gabbu (gabriellesote) ദ്ദി(˵ •̀ ᴗ - ˵ ) ✧
+📘 Lógica:
+- Busca todas as páginas até `totalPages` da API Bling.
+- Cria e atualiza produtos localmente.
+- Marca produtos não encontrados como "to_verify" em vez de deletar.
+- Adiciona pausa entre requests para evitar erro 429.
+by: gabbu (github: gabriellesote) ദ്ദി(˵ •̀ ᴗ - ˵ ) ✧
 */

@@ -120,9 +120,13 @@ export class BlingSyncScheduler {
       // ============================
       const totalTime = ((performance.now() - totalStart) / 1000).toFixed(2);
 
+      const countdown = this.isDev
+        ? '⏱️ [🕔 05:00 → 00:00]'
+        : '⏱️ [🕐 01:00 → 00:00]';
+
       styledLog(
         'sync',
-        `${moduleIcons.success} Sincronização concluída com sucesso! Tempo total: ${totalTime}s | Próxima execução em ${this.frequencyLabel}.`,
+        `${moduleIcons.success} Sincronização concluída com sucesso! Tempo total: ${totalTime}s | Próxima execução em ${this.frequencyLabel} ${countdown}.`,
         'brightGreen',
       );
     } catch (error: any) {
