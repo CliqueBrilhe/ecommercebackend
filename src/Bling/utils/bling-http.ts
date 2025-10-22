@@ -8,7 +8,7 @@ export const blingHttp = axios.create({
   baseURL: 'https://www.bling.com.br/Api/v3', // URL base da API v3 do Bling
   headers: {
     'Content-Type': 'application/json',
-    'Authorization': `Bearer ${process.env.BLING_ACCESS_TOKEN?.trim()}`, // Token salvo no .env
+    'Authorization': `Bearer ${process.env.BLING_APP_PRODUTOS_TOKEN?.trim()}`, // Token salvo no .env
   },
 });
 

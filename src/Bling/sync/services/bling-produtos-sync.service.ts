@@ -5,6 +5,7 @@ import { Repository } from 'typeorm';
 import { Product } from '../../../Modules/Product/entities/product.entity';
 import { Category } from '../../../Modules/Category/entities/category.entity';
 import { BlingService } from '../../core/services/bling.service';
+import { SyncResult } from '../types/sync-result.interface'; // 👈 novo import
 
 @Injectable()
 export class BlingProdutosSyncService {
@@ -18,15 +19,15 @@ export class BlingProdutosSyncService {
     private readonly categoryRepository: Repository<Category>,
   ) {}
 
-  // 🔁 Usado pelo CRON (sync completa) e pode ser chamado manualmente
-  async sincronizarProdutos(): Promise<void> {
+  // 🔁 Usado pelo CRON e manualmente
+  async sincronizarProdutos(): Promise<SyncResult> {
     this.logger.log('🔄 Iniciando sincronização de produtos com o Bling...');
     const response = await this.blingService.getProducts();
     const produtosBling = response?.data;
 
     if (!Array.isArray(produtosBling) || produtosBling.length === 0) {
       this.logger.warn('⚠️ Nenhum produto encontrado na API do Bling.');
-      return;
+      return { createdCount: 0, updatedCount: 0 };
     }
 
     let criados = 0;
@@ -42,9 +43,11 @@ export class BlingProdutosSyncService {
 
     this.logger.log('✅ Sincronização de produtos concluída!');
     this.logger.log(`📊 Resumo: ${criados} criados | ${atualizados} atualizados | ${vinculados} vinculados a categorias.`);
+
+    // 👇 retorno padronizado
+    return { createdCount: criados, updatedCount: atualizados };
   }
 
-  // 🧩 Usado diretamente pelo webhook (product.created / product.updated)
   async upsertFromWebhook(data: any): Promise<{ result: 'created' | 'updated'; linkedCategory: boolean }> {
     const {
       id,
@@ -75,7 +78,7 @@ export class BlingProdutosSyncService {
       description: descricaoCurta || null,
       images: imagemURL ? [imagemURL] : [],
       synchronized: true,
-      status: situacao, // se existir esse campo na sua entidade
+      status: situacao,
     };
 
     const existente = await this.productRepository.findOne({ where: { blingId: id }, relations: ['category'] });
@@ -94,7 +97,6 @@ export class BlingProdutosSyncService {
     return { result: 'created', linkedCategory: !!categoriaLocal };
   }
 
-  // 🗑️ Usado por product.deleted
   async removeByBlingId(blingId: number) {
     await this.productRepository.delete({ blingId });
     this.logger.warn(`🗑️ Produto removido (BlingID: ${blingId})`);
@@ -102,12 +104,9 @@ export class BlingProdutosSyncService {
 }
 
 /*
-🗓 21/10/2025 - 11:25
-🔧 Edição: adicionados métodos upsertFromWebhook() e removeByBlingId(); removido save duplicado; serviço preparado para ser chamado por webhook e CRON.
+🗓 22/10/2025 - 14:45
+Refatoração: sincronizarProdutos() agora retorna SyncResult com contagens.
 --------------------------------------------
-📘 Lógica:
-- sincronizarProdutos(): faz uma varredura completa na API do Bling e upserta localmente.
-- upsertFromWebhook(data): insere/atualiza um único produto vindo do evento do webhook.
-- removeByBlingId(): remove o produto local quando o Bling notificar exclusão.
+Lógica: retorna quantos produtos foram criados/atualizados, permitindo logs detalhados no scheduler.
 edit by: gabbu (gabriellesote) ദ്ദി(˵ •̀ ᴗ - ˵ ) ✧
 */

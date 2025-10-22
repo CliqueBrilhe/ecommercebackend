@@ -4,6 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Category } from '../../../Modules/Category/entities/category.entity';
 import { BlingService } from '../../core/services/bling.service';
+import { SyncResult } from '../types/sync-result.interface'; // 👈 novo import
 
 @Injectable()
 export class BlingCategoriasSyncService {
@@ -15,38 +16,28 @@ export class BlingCategoriasSyncService {
     private readonly categoryRepository: Repository<Category>,
   ) {}
 
-  /**
-   * Sincroniza categorias do Bling com o banco local.
-   * - Cria novas categorias.
-   * - Atualiza existentes (por blingId).
-   * - Mantém hierarquia pai/filho.
-   */
-  async sincronizarCategorias(): Promise<void> {
+  async sincronizarCategorias(): Promise<SyncResult> {
     this.logger.log('🔄 Iniciando sincronização de categorias com o Bling...');
 
-    // 1️⃣ Buscar categorias da API do Bling
     const response = await this.blingService.getCategories();
     const categoriasBling = response?.data;
     if (!Array.isArray(categoriasBling) || categoriasBling.length === 0) {
       this.logger.warn('⚠️ Nenhuma categoria encontrada na API do Bling.');
-      return;
+      return { createdCount: 0, updatedCount: 0 };
     }
 
-    // Contadores para relatório final
     let criadas = 0;
     let atualizadas = 0;
     let vinculadas = 0;
 
-    // 2️⃣ Criar/atualizar categorias SEM pai (primeiro)
     for (const categoria of categoriasBling) {
-      const { id, descricao, categoriaPai } = categoria;
+      const { id, descricao } = categoria;
 
       let categoriaExistente = await this.categoryRepository.findOne({
         where: { blingId: id },
         relations: ['parent'],
       });
 
-      // Dados base para inserção ou atualização
       const dadosCategoria = {
         name: descricao,
         path: descricao.toLowerCase().replace(/\s+/g, '-'),
@@ -54,11 +45,8 @@ export class BlingCategoriasSyncService {
       };
 
       if (categoriaExistente) {
-        await this.categoryRepository.update(
-          categoriaExistente.id,
-          dadosCategoria,
-        );
-         atualizadas++;
+        await this.categoryRepository.update(categoriaExistente.id, dadosCategoria);
+        atualizadas++;
       } else {
         categoriaExistente = this.categoryRepository.create(dadosCategoria);
         await this.categoryRepository.save(categoriaExistente);
@@ -66,17 +54,11 @@ export class BlingCategoriasSyncService {
       }
     }
 
-    // 3️⃣ Atualizar relacionamento pai-filho
     for (const categoria of categoriasBling) {
       if (!categoria.categoriaPai?.id) continue;
 
-      const categoriaFilho = await this.categoryRepository.findOne({
-        where: { blingId: categoria.id },
-      });
-
-      const categoriaPai = await this.categoryRepository.findOne({
-        where: { blingId: categoria.categoriaPai.id },
-      });
+      const categoriaFilho = await this.categoryRepository.findOne({ where: { blingId: categoria.id } });
+      const categoriaPai = await this.categoryRepository.findOne({ where: { blingId: categoria.categoriaPai.id } });
 
       if (categoriaFilho && categoriaPai) {
         categoriaFilho.parent = categoriaPai;
@@ -85,18 +67,18 @@ export class BlingCategoriasSyncService {
       }
     }
 
-    // 4️⃣ Logs de resumo final
     this.logger.log('✅ Sincronização de categorias concluída!');
-    this.logger.log(
-      `📊 Resumo: ${criadas} criadas | ${atualizadas} atualizadas | ${vinculadas} vinculadas como filhas.`,
-    );
+    this.logger.log(`📊 Resumo: ${criadas} criadas | ${atualizadas} atualizadas | ${vinculadas} vinculadas como filhas.`);
+
+    return { createdCount: criadas, updatedCount: atualizadas };
   }
 }
 
 /*
-🕓 17/10/2025 - criação do serviço manual de sincronização de categorias
+🗓 22/10/2025 - 14:45
+Refatoração: sincronizarCategorias() agora retorna SyncResult com contagens.
 --------------------------------------------
-Lógica: consulta categorias do Bling via BlingService, cria ou atualiza
-categorias locais (por blingId) e reconstrói a hierarquia pai-filho.
-by: gabbu (github: gabriellesote)
+Lógica: retorna quantas categorias foram criadas/atualizadas,
+permitindo que o scheduler exiba métricas detalhadas.
+edit by: gabbu (gabriellesote) ദ്ദി(˵ •̀ ᴗ - ˵ ) ✧
 */
