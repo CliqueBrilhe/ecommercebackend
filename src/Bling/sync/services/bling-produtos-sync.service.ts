@@ -1,6 +1,7 @@
+// src/Bling/sync/services/bling-produtos-sync.service.ts
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In } from 'typeorm';
+import { Repository } from 'typeorm';
 import { Product } from '../../../Modules/Product/entities/product.entity';
 import { Category } from '../../../Modules/Category/entities/category.entity';
 import { BlingService } from '../../core/services/bling.service';
@@ -21,7 +22,6 @@ export class BlingProdutosSyncService {
 
   /**
    * Busca todas as páginas de produtos da API do Bling.
-   * Garante que nenhum produto seja ignorado, mesmo em grandes volumes.
    */
   async fetchAllProducts(): Promise<any[]> {
     let page = 1;
@@ -29,67 +29,101 @@ export class BlingProdutosSyncService {
     let hasNext = true;
 
     while (hasNext) {
-      const { produtos, hasNext: next } = await this.blingService.getProducts(page);
+      const { produtos, hasNext: next } =
+        await this.blingService.getProducts(page);
       all = [...all, ...produtos];
       hasNext = next;
       page++;
-
-      // 🕒 Pausa de 300ms entre as páginas para evitar erro 429 (rate limit)
-      if (hasNext) {
-        await new Promise((resolve) => setTimeout(resolve, 300));
-      }
+      if (hasNext) await new Promise((r) => setTimeout(r, 300));
     }
 
-    styledLog('products', `📦 Total de produtos obtidos: ${all.length}`, 'cyan');
+    styledLog(
+      'products',
+      `📦 Total de produtos obtidos: ${all.length}`,
+      'cyan',
+    );
     return all;
   }
 
   /**
    * Sincroniza todos os produtos entre o Bling e o banco local.
-   * Cria, atualiza e marca produtos ausentes com status "to_verify".
    */
   async sincronizarProdutos(): Promise<SyncResult> {
-    styledLog('products', '🔄 Iniciando sincronização completa de produtos...', 'cyan');
+    styledLog(
+      'products',
+      '🔄 Iniciando sincronização completa de produtos...',
+      'cyan',
+    );
 
-    // 🔹 Busca todas as páginas da API
     const produtosBling = await this.fetchAllProducts();
-
     if (!Array.isArray(produtosBling) || produtosBling.length === 0) {
-      styledLog('warning', '⚠️ Nenhum produto encontrado na API do Bling.', 'brightYellow');
+      styledLog(
+        'warning',
+        '⚠️ Nenhum produto encontrado na API do Bling.',
+        'brightYellow',
+      );
       return { createdCount: 0, updatedCount: 0 };
     }
 
+    // ✅ IDs tratados como number
+    const idsBling = produtosBling.map((p) => Number(p.id));
     const produtosLocais = await this.productRepository.find();
-    const idsBling = produtosBling.map((p) => p.id);
 
-    let criados = 0, atualizados = 0, marcados = 0;
+    let criados = 0,
+      atualizados = 0,
+      marcados = 0,
+      removidos = 0,
+      reativados = 0;
 
-    // 🧩 Atualiza ou cria produtos
     for (const produto of produtosBling) {
       const { result } = await this.upsertFromWebhook(produto);
       if (result === 'created') criados++;
       else if (result === 'updated') atualizados++;
     }
 
-    // 🗑️ Marca produtos locais que não existem mais no Bling
-    const produtosParaVerificar = produtosLocais.filter(
-      (p) => !idsBling.includes(p.blingId),
-    );
+    // 🧩 Verifica produtos locais que sumiram no Bling
+    for (const produtoLocal of produtosLocais) {
+      const blingIdNum = Number(produtoLocal.blingId);
+      const existeNoBling = idsBling.includes(blingIdNum);
 
-    if (produtosParaVerificar.length > 0) {
-      const idsRemovidos = produtosParaVerificar.map((p) => p.blingId);
-      await this.productRepository.update({ blingId: In(idsRemovidos) }, { status: 'to_verify' });
-      marcados = idsRemovidos.length;
-      styledLog(
-        'products',
-        `🚨 ${marcados} produtos marcados como "to_verify" (ausentes na API Bling).`,
-        'brightYellow',
-      );
+      if (!existeNoBling) {
+        if (produtoLocal.status === 'to_verify') {
+          await this.productRepository.delete({ id: produtoLocal.id });
+          removidos++;
+          styledLog(
+            'products',
+            `🗑️ Produto removido: ${produtoLocal.name}`,
+            'red',
+          );
+        } else {
+          await this.productRepository.update(
+            { id: produtoLocal.id },
+            { status: 'to_verify' },
+          );
+          marcados++;
+          styledLog(
+            'products',
+            `🚨 Produto marcado como "to_verify": ${produtoLocal.name}`,
+            'brightYellow',
+          );
+        }
+      } else if (produtoLocal.status === 'to_verify') {
+        await this.productRepository.update(
+          { id: produtoLocal.id },
+          { status: 'active' },
+        );
+        reativados++;
+        styledLog(
+          'products',
+          `🔁 Produto reativado: ${produtoLocal.name}`,
+          'green',
+        );
+      }
     }
 
     styledLog(
       'products',
-      `✅ Sincronização concluída: ${criados} criados | ${atualizados} atualizados | ${marcados} marcados.`,
+      `✅ Sync concluída: ${criados} criados | ${atualizados} atualizados | ${marcados} marcados | ${reativados} reativados | ${removidos} removidos.`,
       'brightGreen',
     );
 
@@ -99,7 +133,9 @@ export class BlingProdutosSyncService {
   /**
    * Cria ou atualiza um produto individual (usado pela sync e webhooks).
    */
-  async upsertFromWebhook(data: any): Promise<{ result: 'created' | 'updated'; linkedCategory: boolean }> {
+  async upsertFromWebhook(
+    data: any,
+  ): Promise<{ result: 'created' | 'updated'; linkedCategory: boolean }> {
     const {
       id,
       nome,
@@ -112,17 +148,22 @@ export class BlingProdutosSyncService {
       situacao,
     } = data;
 
-    const stockQuantity = estoque?.saldoVirtualTotal?.[0]?.saldo ?? 0;
+    // 🔹 Normaliza status Bling → Backend
+    const normalizedStatus: 'active' | 'inactive' | 'to_verify' =
+      situacao === 'I' ? 'inactive' : 'active';
+
+    const stockQuantity =
+      typeof estoque === 'object' ? (estoque.saldoVirtualTotal ?? 0) : 0;
 
     let categoriaLocal: Category | null = null;
     if (categoria?.id) {
       categoriaLocal = await this.categoryRepository.findOne({
-        where: { blingId: categoria.id },
+        where: { blingId: Number(categoria.id) },
       });
     }
 
     const base = {
-      blingId: id,
+      blingId: Number(id),
       code: codigo || `CODE_${id}`,
       name: nome,
       price: preco || 0,
@@ -131,45 +172,55 @@ export class BlingProdutosSyncService {
       description: descricaoCurta || null,
       images: imagemURL ? [imagemURL] : [],
       synchronized: true,
-      status: situacao,
+      status: normalizedStatus,
       category: categoriaLocal ?? undefined,
     };
 
     const existente = await this.productRepository.findOne({
-      where: { blingId: id },
+      where: { blingId: Number(id) },
       relations: ['category'],
     });
 
     if (existente) {
       Object.assign(existente, base);
       await this.productRepository.save(existente);
-      styledLog('products', `♻️ Produto atualizado: ${nome} (BlingID: ${id})`, 'green');
+      styledLog(
+        'products',
+        `♻️ Atualizado: ${nome} (${normalizedStatus})`,
+        'green',
+      );
       return { result: 'updated', linkedCategory: !!categoriaLocal };
     }
 
     const novo = this.productRepository.create(base);
     await this.productRepository.save(novo);
-    styledLog('products', `🆕 Produto criado: ${nome} (BlingID: ${id})`, 'brightGreen');
+    styledLog(
+      'products',
+      `🆕 Criado: ${nome} (${normalizedStatus})`,
+      'brightGreen',
+    );
     return { result: 'created', linkedCategory: !!categoriaLocal };
   }
 
-  /**
-   * Remoção direta (usado pelo webhook de exclusão).
-   */
   async removeByBlingId(blingId: number) {
     await this.productRepository.delete({ blingId });
-    styledLog('products', `🗑️ Produto removido via webhook (BlingID: ${blingId})`, 'red');
+    styledLog(
+      'products',
+      `🗑️ Produto removido via webhook (BlingID: ${blingId})`,
+      'red',
+    );
   }
 }
 
 /*
-🗓 22/10/2025 - 21:10
-🔧 Correção final: paginação completa + delay entre páginas + marcação segura "to_verify".
+🗓 23/10/2025 - 03:00
+✅ Correção de tipagem e normalização de status Bling → Backend.
 --------------------------------------------
 📘 Lógica:
-- Busca todas as páginas até `totalPages` da API Bling.
-- Cria e atualiza produtos localmente.
-- Marca produtos não encontrados como "to_verify" em vez de deletar.
-- Adiciona pausa entre requests para evitar erro 429.
+- Mantém blingId como number (compatível com entidade e banco).
+- Converte IDs usando Number() antes de comparar.
+- Normaliza status:
+  "A" → "active", "I" → "inactive".
+- Mantém ciclo seguro: marcar, remover e reativar.
 by: gabbu (github: gabriellesote) ദ്ദി(˵ •̀ ᴗ - ˵ ) ✧
 */

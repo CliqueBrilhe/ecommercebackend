@@ -12,7 +12,7 @@
 edit by: gabbu (gabriellesote) ദ്ദി(˵ •̀ ᴗ - ˵ ) ✧
 */
 
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable} from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -24,7 +24,6 @@ import { styledLog, colors, moduleIcons } from '../../../utils/log-style.util';
 
 @Injectable()
 export class BlingSyncScheduler {
-  private readonly logger = new Logger(BlingSyncScheduler.name);
   private readonly isDev = process.env.NODE_ENV === 'development';
   private readonly frequencyLabel = this.isDev ? '5 minutos' : '1 hora';
 
@@ -121,8 +120,8 @@ export class BlingSyncScheduler {
       const totalTime = ((performance.now() - totalStart) / 1000).toFixed(2);
 
       const countdown = this.isDev
-        ? '⏱️ [🕔 05:00 → 00:00]'
-        : '⏱️ [🕐 01:00 → 00:00]';
+        ? '🕔 05:00'
+        : '🕐 01:00:00';
 
       styledLog(
         'sync',

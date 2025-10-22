@@ -67,8 +67,6 @@ export class BlingCategoriasSyncService {
       }
     }
 
-    this.logger.log('✅ Sincronização de categorias concluída!');
-    this.logger.log(`📊 Resumo: ${criadas} criadas | ${atualizadas} atualizadas | ${vinculadas} vinculadas como filhas.`);
 
     return { createdCount: criadas, updatedCount: atualizadas };
   }
