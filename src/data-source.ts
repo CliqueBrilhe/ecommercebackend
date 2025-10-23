@@ -5,7 +5,7 @@ import { User } from './Modules/User/entities/user.entity';
 import { Product } from '@product/product.entity';
 import { Category } from '@category/category.entity';
 import { Order } from '@order/order.entity';
-import { Address } from '@addres/address.entity';
+import { Address } from '@address/address.entity';
 
 
 const isDev = process.env.NODE_ENV === 'development';
@@ -20,7 +20,7 @@ export const AppDataSource = new DataSource({
     : { rejectUnauthorized: false }, // SSL só em produção
   synchronize: isDev, // sincroniza automaticamente em dev
   logging: ['error'],
-  entities: [User, Product, Category, Order, Address],
+  entities: [Product, Category],
   migrations: ['dist/migrations/*.js'],
 });
 
