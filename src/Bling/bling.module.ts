@@ -3,9 +3,10 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { BlingController } from './core/controllers/bling.controller';
 import { BlingService } from './core/services/bling.service';
+import { BlingSyncModule } from './sync/bling-sync.module';
 
 @Module({
-  imports: [],
+  imports: [BlingSyncModule],
   controllers: [BlingController],
   providers: [BlingService],
   exports: [BlingService],

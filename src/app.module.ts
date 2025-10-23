@@ -40,7 +40,6 @@ const getOrmConfig = (configService: ConfigService): TypeOrmModuleOptions => {
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     ScheduleModule.forRoot(),
-
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],

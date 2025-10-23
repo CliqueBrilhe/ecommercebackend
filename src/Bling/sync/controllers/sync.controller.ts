@@ -6,7 +6,9 @@ import { Controller, Post, Get } from '@nestjs/common';
 import { BlingCategoriasSyncService } from '../services/bling-categorias-sync.service';
 import { BlingProdutosSyncService } from '../services/bling-produtos-sync.service';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
-import { SyncLog } from '../entities/sync-log.entity';
+import { SyncLog} from '../entities/sync-log.entity';
+import { logSeparator } from '../../../utils/log-style.util';
+
 
 @Controller('bling/sync')
 export class SyncController {
@@ -24,7 +26,9 @@ export class SyncController {
     description: 'Sincronização concluída com sucesso.',
   })
   async syncCategorias() {
+    logSeparator('SYNC MANUAL - CATEGORIAS');
     await this.categoriasSyncService.sincronizarCategorias();
+    logSeparator('END SYNC');
     return { message: 'Sincronização de categorias concluída com sucesso.' };
   }
 
@@ -35,7 +39,11 @@ export class SyncController {
     description: 'Sincronização concluída com sucesso.',
   })
   async syncProdutos() {
+    logSeparator('SYNC MANUAL - PRODUTOS');
+
     await this.produtosSyncService.sincronizarProdutos();
+    logSeparator('END SYNC');
+
     return { message: 'Sincronização de produtos concluída com sucesso.' };
   }
 

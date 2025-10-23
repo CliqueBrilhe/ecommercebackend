@@ -5,6 +5,8 @@ import { Repository } from 'typeorm';
 import { Product } from '../../../Modules/Product/entities/product.entity';
 import { Category } from '../../../Modules/Category/entities/category.entity';
 import { BlingService } from '../../core/services/bling.service';
+import { SyncResult } from '../types/sync-result.interface';
+import { styledLog } from '../../../utils/log-style.util';
 
 @Injectable()
 export class BlingProdutosSyncService {
@@ -19,107 +21,206 @@ export class BlingProdutosSyncService {
   ) {}
 
   /**
-   * Sincroniza produtos do Bling com o banco local.
-   * - Cria novos produtos.
-   * - Atualiza produtos existentes (por blingId).
-   * - Relaciona com a categoria local (por blingId).
+   * Busca todas as páginas de produtos da API do Bling.
    */
-  async sincronizarProdutos(): Promise<void> {
-    this.logger.log('🔄 Iniciando sincronização de produtos com o Bling...');
+  async fetchAllProducts(): Promise<any[]> {
+    let page = 1;
+    let all: any[] = [];
+    let hasNext = true;
 
-    // 1️⃣ Buscar produtos da API do Bling
-    const response = await this.blingService.getProducts();
-    const produtosBling = response?.data;
+    while (hasNext) {
+      const { produtos, hasNext: next } =
+        await this.blingService.getProducts(page);
+      all = [...all, ...produtos];
+      hasNext = next;
+      page++;
+      if (hasNext) await new Promise((r) => setTimeout(r, 300));
+    }
 
+    styledLog(
+      'products',
+      `📦 Total de produtos obtidos: ${all.length}`,
+      'cyan',
+    );
+    return all;
+  }
+
+  /**
+   * Sincroniza todos os produtos entre o Bling e o banco local.
+   */
+  async sincronizarProdutos(): Promise<SyncResult> {
+    styledLog(
+      'products',
+      '🔄 Iniciando sincronização completa de produtos...',
+      'cyan',
+    );
+
+    const produtosBling = await this.fetchAllProducts();
     if (!Array.isArray(produtosBling) || produtosBling.length === 0) {
-      this.logger.warn('⚠️ Nenhum produto encontrado na API do Bling.');
-      return;
+      styledLog(
+        'warning',
+        '⚠️ Nenhum produto encontrado na API do Bling.',
+        'brightYellow',
+      );
+      return { createdCount: 0, updatedCount: 0 };
     }
 
-    let criados = 0;
-    let atualizados = 0;
-    let vinculados = 0;
+    // ✅ IDs tratados como number
+    const idsBling = produtosBling.map((p) => Number(p.id));
+    const produtosLocais = await this.productRepository.find();
 
-    // 2️⃣ Percorrer e salvar produtos
+    let criados = 0,
+      atualizados = 0,
+      marcados = 0,
+      removidos = 0,
+      reativados = 0;
+
     for (const produto of produtosBling) {
-      const {
-        id,
-        nome,
-        codigo,
-        preco,
-        descricaoCurta,
-        imagemURL,
-        estoque,
-        categoria,
-      } = produto;
+      const { result } = await this.upsertFromWebhook(produto);
+      if (result === 'created') criados++;
+      else if (result === 'updated') atualizados++;
+    }
 
-      // Quantidade total em estoque (o saldoVirtualTotal é um array, mas pode vir vazio)
-      const stockQuantity = estoque?.saldoVirtualTotal?.[0]?.saldo || 0;
+    // 🧩 Verifica produtos locais que sumiram no Bling
+    for (const produtoLocal of produtosLocais) {
+      const blingIdNum = Number(produtoLocal.blingId);
+      const existeNoBling = idsBling.includes(blingIdNum);
 
-      // Busca a categoria local, se houver vínculo
-      let categoriaLocal: Category | null = null;
-      if (categoria?.id) {
-        categoriaLocal = await this.categoryRepository.findOne({
-          where: { blingId: categoria.id },
-        });
-
-        if (categoriaLocal) vinculados++;
-      }
-
-      // Dados base do produto
-      const dadosProduto = {
-        blingId: id,
-        code: codigo || `CODE_${id}`,
-        name: nome,
-        price: preco || 0,
-        stockQuantity,
-        stock: stockQuantity,
-        description: descricaoCurta || null,
-        images: imagemURL ? [imagemURL] : [],
-        category: categoriaLocal,
-        synchronized: true,
-      };
-
-      // Verifica se já existe produto com mesmo blingId
-      const produtoExistente = await this.productRepository.findOne({
-        where: { blingId: id },
-      });
-
-      if (produtoExistente) {
-        const { category, ...dadosSemCategoria } = dadosProduto;
-
+      if (!existeNoBling) {
+        if (produtoLocal.status === 'to_verify') {
+          await this.productRepository.delete({ id: produtoLocal.id });
+          removidos++;
+          styledLog(
+            'products',
+            `🗑️ Produto removido: ${produtoLocal.name}`,
+            'red',
+          );
+        } else {
+          await this.productRepository.update(
+            { id: produtoLocal.id },
+            { status: 'to_verify' },
+          );
+          marcados++;
+          styledLog(
+            'products',
+            `🚨 Produto marcado como "to_verify": ${produtoLocal.name}`,
+            'brightYellow',
+          );
+        }
+      } else if (produtoLocal.status === 'to_verify') {
         await this.productRepository.update(
-          produtoExistente.id,
-          dadosSemCategoria,
+          { id: produtoLocal.id },
+          { status: 'active' },
         );
-        atualizados++;
-        this.logger.log(`♻️ Produto atualizado: ${nome} (BlingID: ${id})`);
-      } else {
-        const dadosProdutoLimpo = {
-          ...dadosProduto,
-          category: dadosProduto.category ?? undefined,
-        };
-
-        const novoProduto = this.productRepository.create(dadosProdutoLimpo);
-        await this.productRepository.save(novoProduto);
-        await this.productRepository.save(novoProduto);
-        criados++;
-        this.logger.log(`🆕 Produto criado: ${nome} (BlingID: ${id})`);
+        reativados++;
+        styledLog(
+          'products',
+          `🔁 Produto reativado: ${produtoLocal.name}`,
+          'green',
+        );
       }
     }
 
-    // 3️⃣ Logs finais
-    this.logger.log('✅ Sincronização de produtos concluída!');
-    this.logger.log(
-      `📊 Resumo: ${criados} criados | ${atualizados} atualizados | ${vinculados} vinculados a categorias.`,
+    styledLog(
+      'products',
+      `✅ Sync concluída: ${criados} criados | ${atualizados} atualizados | ${marcados} marcados | ${reativados} reativados | ${removidos} removidos.`,
+      'brightGreen',
+    );
+
+    return { createdCount: criados, updatedCount: atualizados };
+  }
+
+  /**
+   * Cria ou atualiza um produto individual (usado pela sync e webhooks).
+   */
+  async upsertFromWebhook(
+    data: any,
+  ): Promise<{ result: 'created' | 'updated'; linkedCategory: boolean }> {
+    const {
+      id,
+      nome,
+      codigo,
+      preco,
+      descricaoCurta,
+      imagemURL,
+      estoque,
+      categoria,
+      situacao,
+    } = data;
+
+    // 🔹 Normaliza status Bling → Backend
+    const normalizedStatus: 'active' | 'inactive' | 'to_verify' =
+      situacao === 'I' ? 'inactive' : 'active';
+
+    const stockQuantity =
+      typeof estoque === 'object' ? (estoque.saldoVirtualTotal ?? 0) : 0;
+
+    let categoriaLocal: Category | null = null;
+    if (categoria?.id) {
+      categoriaLocal = await this.categoryRepository.findOne({
+        where: { blingId: Number(categoria.id) },
+      });
+    }
+
+    const base = {
+      blingId: Number(id),
+      code: codigo || `CODE_${id}`,
+      name: nome,
+      price: preco || 0,
+      stockQuantity,
+      stock: stockQuantity,
+      description: descricaoCurta || null,
+      images: imagemURL ? [imagemURL] : [],
+      synchronized: true,
+      status: normalizedStatus,
+      category: categoriaLocal ?? undefined,
+    };
+
+    const existente = await this.productRepository.findOne({
+      where: { blingId: Number(id) },
+      relations: ['category'],
+    });
+
+    if (existente) {
+      Object.assign(existente, base);
+      await this.productRepository.save(existente);
+      styledLog(
+        'products',
+        `♻️ Atualizado: ${nome} (${normalizedStatus})`,
+        'green',
+      );
+      return { result: 'updated', linkedCategory: !!categoriaLocal };
+    }
+
+    const novo = this.productRepository.create(base);
+    await this.productRepository.save(novo);
+    styledLog(
+      'products',
+      `🆕 Criado: ${nome} (${normalizedStatus})`,
+      'brightGreen',
+    );
+    return { result: 'created', linkedCategory: !!categoriaLocal };
+  }
+
+  async removeByBlingId(blingId: number) {
+    await this.productRepository.delete({ blingId });
+    styledLog(
+      'products',
+      `🗑️ Produto removido via webhook (BlingID: ${blingId})`,
+      'red',
     );
   }
 }
 
 /*
-🕓 17/10/2025 - criação do serviço manual de sincronização de produtos
+🗓 23/10/2025 - 03:00
+✅ Correção de tipagem e normalização de status Bling → Backend.
 --------------------------------------------
-Lógica: consulta produtos da API do Bling, cria ou atualiza localmente com base no blingId,
-relaciona cada produto à categoria correspondente e gera logs detalhados de execução.
-by: gabbu (github: gabriellesote)
+📘 Lógica:
+- Mantém blingId como number (compatível com entidade e banco).
+- Converte IDs usando Number() antes de comparar.
+- Normaliza status:
+  "A" → "active", "I" → "inactive".
+- Mantém ciclo seguro: marcar, remover e reativar.
+by: gabbu (github: gabriellesote) ദ്ദി(˵ •̀ ᴗ - ˵ ) ✧
 */
