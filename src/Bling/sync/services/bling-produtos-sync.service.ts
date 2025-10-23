@@ -6,7 +6,7 @@ import { Product } from '../../../Modules/Product/entities/product.entity';
 import { Category } from '../../../Modules/Category/entities/category.entity';
 import { BlingService } from '../../core/services/bling.service';
 import { SyncResult } from '../types/sync-result.interface';
-import { styledLog } from '../../../utils/log-style.util';
+import { styledLog, colors, } from '../../../utils/log-style.util';
 
 @Injectable()
 export class BlingProdutosSyncService {
@@ -48,6 +48,7 @@ export class BlingProdutosSyncService {
   /**
    * Sincroniza todos os produtos entre o Bling e o banco local.
    */
+
   async sincronizarProdutos(): Promise<SyncResult> {
     styledLog(
       'products',
@@ -65,27 +66,34 @@ export class BlingProdutosSyncService {
       return { createdCount: 0, updatedCount: 0 };
     }
 
-    // ✅ IDs tratados como number
     const idsBling = produtosBling.map((p) => Number(p.id));
     const produtosLocais = await this.productRepository.find();
 
     let criados = 0,
       atualizados = 0,
       marcados = 0,
-      removidos = 0,
-      reativados = 0;
+      reativados = 0,
+      inativados = 0,
+      removidos = 0;
 
+    // 🧩 Criação/atualização de todos os produtos listados no Bling
     for (const produto of produtosBling) {
       const { result } = await this.upsertFromWebhook(produto);
       if (result === 'created') criados++;
       else if (result === 'updated') atualizados++;
     }
 
-    // 🧩 Verifica produtos locais que sumiram no Bling
+    // 🧩 Verificação de produtos locais que não vieram da API
     for (const produtoLocal of produtosLocais) {
       const blingIdNum = Number(produtoLocal.blingId);
-      const existeNoBling = idsBling.includes(blingIdNum);
+      const produtoBling = produtosBling.find(
+        (p) => Number(p.id) === blingIdNum,
+      );
 
+      const situacaoBling = produtoBling?.situacao ?? null;
+      const existeNoBling = !!produtoBling;
+
+      // 1️⃣ Produto não existe mais na API → marca ou exclui
       if (!existeNoBling) {
         if (produtoLocal.status === 'to_verify') {
           await this.productRepository.delete({ id: produtoLocal.id });
@@ -107,7 +115,53 @@ export class BlingProdutosSyncService {
             'brightYellow',
           );
         }
-      } else if (produtoLocal.status === 'to_verify') {
+        continue;
+      }
+
+      // 2️⃣ Produto está "E" (excluído)
+      if (situacaoBling === 'E') {
+        if (produtoLocal.status === 'to_verify') {
+          await this.productRepository.delete({ id: produtoLocal.id });
+          removidos++;
+          styledLog(
+            'products',
+            `🔥 Produto excluído permanentemente: ${produtoLocal.name}`,
+            'brightRed',
+          );
+        } else {
+          await this.productRepository.update(
+            { id: produtoLocal.id },
+            { status: 'to_verify' },
+          );
+          marcados++;
+          styledLog(
+            'products',
+            `🚨 Produto marcado para exclusão: ${produtoLocal.name}`,
+            'brightYellow',
+          );
+        }
+        continue;
+      }
+
+      // 3️⃣ Produto está "I" (inativo)
+      if (situacaoBling === 'I') {
+        if (produtoLocal.status !== 'inactive') {
+          await this.productRepository.update(
+            { id: produtoLocal.id },
+            { status: 'inactive' },
+          );
+          inativados++;
+          styledLog(
+            'products',
+            `⚫ Produto inativado: ${produtoLocal.name}`,
+            'brightBlue',
+          );
+        }
+        continue;
+      }
+
+      // 4️⃣ Produto reativado ("A")
+      if (situacaoBling === 'A' && produtoLocal.status !== 'active') {
         await this.productRepository.update(
           { id: produtoLocal.id },
           { status: 'active' },
@@ -123,7 +177,7 @@ export class BlingProdutosSyncService {
 
     styledLog(
       'products',
-      `✅ Sync concluída: ${criados} criados | ${atualizados} atualizados | ${marcados} marcados | ${reativados} reativados | ${removidos} removidos.`,
+      `✅ Sync concluída: ${criados} criados | ${atualizados} atualizados | ${inativados} inativados | ${marcados} marcados | ${reativados} reativados | ${removidos} removidos.`,
       'brightGreen',
     );
 

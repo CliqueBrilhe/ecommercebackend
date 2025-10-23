@@ -13,7 +13,7 @@ export class BlingService {
  async getProducts(page = 1) {
     try {
       const response = await blingHttp.get('/produtos', {
-        params: { pagina: page }, // conforme doc oficial
+        params: { pagina: page,  criterio: 5, }, // conforme doc oficial
         headers: { Accept: 'application/json' },
       });
 

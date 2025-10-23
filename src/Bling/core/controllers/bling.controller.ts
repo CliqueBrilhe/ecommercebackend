@@ -17,7 +17,7 @@ by: gabbu (github: gabriellesote)
 import { Controller, Get, Post, Headers, Logger, Body } from '@nestjs/common';
 import { BlingService } from '../services/bling.service';
 import { BlingProdutosSyncService } from '../../sync/services/bling-produtos-sync.service';
-import { styledLog, colors } from '../../../utils/log-style.util';
+import { styledLog, colors, logSeparator } from '../../../utils/log-style.util';
 
 @Controller('bling')
 export class BlingController {
@@ -42,46 +42,56 @@ export class BlingController {
   }
 
   // 📩 Webhook principal (criação, atualização e remoção)
-  @Post('webhook')
-  async handleWebhook(@Body() body: any, @Headers() headers: Record<string, string>) {
-    // Loga o corpo cru para diagnóstico
-    this.logger.debug(`📦 Corpo bruto do webhook:\n${JSON.stringify(body, null, 2)}`);
+// 📩 Webhook principal (criação, atualização e remoção)
+@Post('webhook')
+async handleWebhook(@Body() body: any, @Headers() headers: Record<string, string>) {
+  logSeparator('WEBHOOK PRODUTO', 'magenta');
+  this.logger.debug(`📦 Corpo bruto do webhook:\n${JSON.stringify(body, null, 2)}`);
 
-    if (!body || Object.keys(body).length === 0) {
-      styledLog('warning', '⚠️ Webhook recebido com corpo vazio ou formato inválido.', 'brightYellow');
-      return { ok: false, message: 'Empty or invalid payload' };
-    }
-
-    // Detecta nome do evento (pode vir como event, operation, ou resource)
-    const event = body.event || body.operation || null;
-    const resource = body.resource || 'unknown';
-    const id = body?.data?.id ?? null;
-
-    styledLog('sync', `📩 Webhook recebido: ${event ?? 'sem evento'} | recurso: ${resource} | id=${id ?? 'null'}`, 'brightCyan');
-
-    try {
-      // Trata evento de produto
-      if (resource === 'produto' || event?.includes('product')) {
-        if (event?.includes('created') || body.operation === 'created') {
-          styledLog('products', `🆕 Produto criado (ID=${id})`, 'green');
-          await this.produtosSync.upsertFromWebhook(body.data);
-        } else if (event?.includes('updated') || body.operation === 'updated') {
-          styledLog('products', `♻️ Produto atualizado (ID=${id})`, 'brightGreen');
-          await this.produtosSync.upsertFromWebhook(body.data);
-        } else if (event?.includes('deleted') || body.operation === 'deleted') {
-          styledLog('products', `🗑️ Produto removido (ID=${id})`, 'red');
-          await this.produtosSync.removeByBlingId(id);
-        } else {
-          styledLog('warning', `⚠️ Operação de produto não reconhecida: ${event}`, 'brightYellow');
-        }
-      } else {
-        styledLog('warning', `⚠️ Webhook recebido de recurso não tratado: ${resource}`, 'brightYellow');
-      }
-    } catch (error: any) {
-      styledLog('error', `❌ Erro ao processar webhook do Bling: ${error.message}`, 'brightRed');
-      return { ok: false, error: error.message };
-    }
-
-    return { ok: true };
+  if (!body || Object.keys(body).length === 0) {
+    styledLog('warning', '⚠️ Webhook recebido com corpo vazio ou formato inválido.', 'brightYellow');
+    return { ok: false, message: 'Empty or invalid payload' };
   }
+
+  try {
+    // 🔹 Detecta formato do payload
+    const payload = body.data && typeof body.data === 'object' ? body.data : body;
+    const event = body.event || 'unknown';
+    const id = Number(payload.id);
+
+    if (!id || isNaN(id)) {
+      styledLog('warning', `⚠️ Payload recebido sem ID válido de produto. Evento: ${event}`, 'brightYellow');
+      return { ok: false, message: 'Invalid or missing product ID' };
+    }
+
+    // 🔍 Detecta tipo de evento
+    const isDeleteEvent =
+      event?.includes('deleted') ||
+      (Object.keys(payload).length === 1 && 'id' in payload);
+
+    if (isDeleteEvent) {
+      styledLog('products', `🗑️ Produto removido (BlingID=${id})`, 'red');
+      await this.produtosSync.removeByBlingId(id);
+      return { ok: true, message: 'Product deleted successfully' };
+    }
+
+    // 🔹 Mapeia status do Bling "E" (inativo) para o backend
+    if (payload.situacao === 'E') payload.situacao = 'I';
+
+    // 🆕 Criação / Atualização
+    const { result } = await this.produtosSync.upsertFromWebhook(payload);
+
+    if (result === 'created') {
+      styledLog('products', `🆕 Produto criado via webhook: ${payload.nome} (BlingID=${id})`, 'brightGreen');
+    } else {
+      styledLog('products', `♻️ Produto atualizado via webhook: ${payload.nome} (BlingID=${id})`, 'green');
+    }
+
+    return { ok: true, message: 'Product upserted successfully' };
+  } catch (error: any) {
+    styledLog('error', `❌ Erro ao processar webhook do Bling: ${error.message}`, 'brightRed');
+    return { ok: false, error: error.message };
+  }
+}
+
 }
