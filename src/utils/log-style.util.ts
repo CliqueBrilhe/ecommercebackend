@@ -21,6 +21,7 @@ export const colors = {
   bold: '\x1b[1m',
   underline: '\x1b[4m',
   inverse: '\x1b[7m',
+
 };
 
 export const moduleIcons = {
