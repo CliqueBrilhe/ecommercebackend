@@ -6,7 +6,7 @@ import { Product } from '../../../Modules/Product/entities/product.entity';
 import { Category } from '../../../Modules/Category/entities/category.entity';
 import { BlingService } from '../../core/services/bling.service';
 import { SyncResult } from '../types/sync-result.interface';
-import { styledLog, colors, } from '../../../utils/log-style.util';
+import { styledLog, colors } from '../../../utils/log-style.util';
 
 @Injectable()
 export class BlingProdutosSyncService {
@@ -78,9 +78,13 @@ export class BlingProdutosSyncService {
 
     // 🧩 Criação/atualização de todos os produtos listados no Bling
     for (const produto of produtosBling) {
-      const { result } = await this.upsertFromWebhook(produto);
+      const { result, status } = await this.upsertFromWebhook(produto);
+
       if (result === 'created') criados++;
       else if (result === 'updated') atualizados++;
+
+      if (status === 'inactive') inativados++;
+      else if (status === 'active') reativados++;
     }
 
     // 🧩 Verificação de produtos locais que não vieram da API
@@ -189,7 +193,11 @@ export class BlingProdutosSyncService {
    */
   async upsertFromWebhook(
     data: any,
-  ): Promise<{ result: 'created' | 'updated'; linkedCategory: boolean }> {
+  ): Promise<{
+    result: 'created' | 'updated';
+    linkedCategory: boolean;
+    status: 'active' | 'inactive' | 'to_verify';
+  }> {
     const {
       id,
       nome,
@@ -204,7 +212,7 @@ export class BlingProdutosSyncService {
 
     // 🔹 Normaliza status Bling → Backend
     const normalizedStatus: 'active' | 'inactive' | 'to_verify' =
-      situacao === 'I' ? 'inactive' : 'active';
+      situacao === 'I' || situacao === 'E' ? 'inactive' : 'active';
 
     const stockQuantity =
       typeof estoque === 'object' ? (estoque.saldoVirtualTotal ?? 0) : 0;
@@ -243,7 +251,11 @@ export class BlingProdutosSyncService {
         `♻️ Atualizado: ${nome} (${normalizedStatus})`,
         'green',
       );
-      return { result: 'updated', linkedCategory: !!categoriaLocal };
+      return {
+        result: 'updated',
+        linkedCategory: !!categoriaLocal,
+        status: normalizedStatus,
+      };
     }
 
     const novo = this.productRepository.create(base);
@@ -253,7 +265,11 @@ export class BlingProdutosSyncService {
       `🆕 Criado: ${nome} (${normalizedStatus})`,
       'brightGreen',
     );
-    return { result: 'created', linkedCategory: !!categoriaLocal };
+    return {
+      result: 'created',
+      linkedCategory: !!categoriaLocal,
+      status: normalizedStatus,
+    };
   }
 
   async removeByBlingId(blingId: number) {
