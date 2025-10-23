@@ -74,6 +74,15 @@ export function styledLog(
   );
 }
 
+
+export function logSeparator(label?: string, color: keyof typeof colors = 'brightBlack') {
+  const line = '─'.repeat(65);
+  const title = label ? ` ${label.toUpperCase()} ` : '';
+  console.log(`\n${colors[color]}${line}${title}${line}${colors.reset}\n`);
+}
+
+
+
 /*
 🗓 22/10/2025 - 18:50
 ✨ Atualização: logs padronizados com timestamp e formato estilo NestJS.

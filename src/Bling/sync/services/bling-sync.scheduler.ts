@@ -12,7 +12,7 @@
 edit by: gabbu (gabriellesote) ദ്ദി(˵ •̀ ᴗ - ˵ ) ✧
 */
 
-import { Injectable} from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -20,7 +20,12 @@ import { performance } from 'perf_hooks';
 import { BlingCategoriasSyncService } from './bling-categorias-sync.service';
 import { BlingProdutosSyncService } from './bling-produtos-sync.service';
 import { SyncLog } from '../entities/sync-log.entity';
-import { styledLog, colors, moduleIcons } from '../../../utils/log-style.util';
+import {
+  styledLog,
+  colors,
+  moduleIcons,
+  logSeparator,
+} from '../../../utils/log-style.util';
 
 @Injectable()
 export class BlingSyncScheduler {
@@ -67,6 +72,7 @@ export class BlingSyncScheduler {
       ? `${colors.cyan}${colors.bold}🧪 DEV${colors.reset}`
       : `${colors.yellow}${colors.bold}☁️ PRODUÇÃO${colors.reset}`;
 
+    logSeparator('SYNC AUTO');
     styledLog(
       'sync',
       `⚙️ [${envLabel}] Iniciando sincronização automática do Bling...`,
@@ -79,6 +85,7 @@ export class BlingSyncScheduler {
       // ============================
       // 1️⃣ Sincronização de Categorias
       // ============================
+      logSeparator('CATEGORIES');
       const startCats = performance.now();
       const resultCats = await this.categoriasSync.sincronizarCategorias();
       const timeCats = ((performance.now() - startCats) / 1000).toFixed(2);
@@ -98,6 +105,7 @@ export class BlingSyncScheduler {
       // ============================
       // 2️⃣ Sincronização de Produtos
       // ============================
+      logSeparator('PRODUCTS');
       const startProds = performance.now();
       const resultProds = await this.produtosSync.sincronizarProdutos();
       const timeProds = ((performance.now() - startProds) / 1000).toFixed(2);
@@ -117,11 +125,10 @@ export class BlingSyncScheduler {
       // ============================
       // 3️⃣ Tempo total e finalização
       // ============================
+      logSeparator('SUMMARY');
       const totalTime = ((performance.now() - totalStart) / 1000).toFixed(2);
 
-      const countdown = this.isDev
-        ? '🕔 05:00'
-        : '🕐 01:00:00';
+      const countdown = this.isDev ? '🕔 05:00' : '🕐 01:00:00';
 
       styledLog(
         'sync',
