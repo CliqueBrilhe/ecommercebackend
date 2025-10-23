@@ -18,7 +18,8 @@
       "@user/*": ["Modules/User/entities/*"],
       "@product/*": ["Modules/Product/entities/*"],
       "@order/*": ["Modules/Order/entities/*"],
-      "@category/*": ["Modules/Category/entities/*"]
+      "@category/*": ["Modules/Category/entities/*"],
+      "@addres/*": ["Modules/Address/entities/*"],
     },
     "incremental": true,
     "skipLibCheck": true,
