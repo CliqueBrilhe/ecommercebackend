@@ -13,7 +13,7 @@ export class UsuarioController {
 
   @Get()
   async listarUsuariosDireto() {
-    styledLog('users', '🔍 Testando comunicação com API do Bling (contatos)...', 'cyan');
+    styledLog('users', '🔍 Testando comunicação com API de contatos (usuários)...', 'cyan');
     return this.usuarioService.getUsers();
   }
 
@@ -25,11 +25,11 @@ export class UsuarioController {
 }
 
 /*
-🗓 24/10/2025 - 20:00
-✨ Criação do UsuarioController.
+🗓 24/10/2025 - 23:30
+✅ Controlador revisado e padronizado.
 --------------------------------------------
 📘 Lógica:
-- GET /bling/usuarios → Testa comunicação direta com a API do Bling.
-- POST /bling/usuarios/sync → Sincroniza contatos Bling → DB local.
+- GET: testa comunicação com API do Bling.
+- POST /sync: executa sincronização manual.
 by: gabbu (github: gabriellesote) ദ്ദി(˵ •̀ ᴗ - ˵ ) ✧
 */
