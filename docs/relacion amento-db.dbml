@@ -1,0 +1,265 @@
+// docs/clique-e-brilhe.dbml
+
+Project CliqueEBrilhe {
+  database_type: "PostgreSQL"
+  Note: 'Modelo ER completo do sistema Clique e Brilhe - sincronização híbrida com Bling ERP'
+}
+
+// ======================
+// ENUMS
+// ======================
+Enum cart_status {
+  active
+  converted
+  abandoned
+}
+
+Enum order_status {
+  pending
+  paid
+  shipped
+  delivered
+  cancelled
+}
+
+Enum payment_status {
+  pending
+  approved
+  refused
+  refunded
+  cancelled
+}
+
+Enum invoice_status {
+  authorized
+  cancelled
+  denied
+  pending
+  error
+}
+
+Enum user_type {
+  admin
+  common
+}
+
+Enum user_status {
+  active
+  inactive
+  deleted
+  no_activity
+}
+
+Enum product_status {
+  active
+  to_verify
+  inactive
+}
+
+// ======================
+// TABELAS PRINCIPAIS
+// ======================
+
+Table users {
+  id integer [pk, increment]
+  name varchar
+  last_login_at timestamp [note: 'Data e hora do último login']
+  cpf varchar [unique]
+  email varchar [unique]
+  phone varchar
+  password varchar
+  user_type user_type [default: 'common']
+  status user_status [default: 'active']
+  bling_id bigint [note: 'ID do cliente no Bling', unique, null]
+  synchronized boolean [default: false]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp
+  Note: 'Tabela principal de usuários do sistema (clientes e administradores)'
+}
+
+Table address {
+  id integer [pk, increment]
+  street varchar
+  number varchar
+  complement varchar [null]
+  neighborhood varchar
+  city varchar
+  state char(2)
+  zip_code varchar
+  is_main boolean [default: false]
+  bling_id bigint [note: 'ID do endereço no Bling', null]
+  synchronized boolean [default: false]
+  user_id integer [ref: > users.id]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp
+  Note: 'Endereços de usuários, usados para entrega e emissão fiscal (NFC-e)'
+}
+
+Table carts {
+  id integer [pk, increment]
+  user_id integer [ref: > users.id]
+  status cart_status [default: 'active']
+  total decimal(10,2) [default: 0]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp
+  Note: 'Carrinhos de compras ativos, abandonados ou convertidos em pedido'
+}
+
+Table cart_items {
+  id integer [pk, increment]
+  cart_id integer [ref: > carts.id]
+  product_id integer [ref: > product.id]
+  quantity int [default: 1]
+  price decimal(10,2)
+  subtotal decimal(10,2)
+  Note: 'Itens dentro de um carrinho de compras'
+}
+
+Table category {
+  id integer [pk, increment]
+  bling_id bigint [unique, null]
+  name varchar(100) [unique, not null]
+  path varchar(255) [null]
+  "order" integer [default: 0]
+  parent_id integer [ref: > category.id, null]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp
+  Note: 'Categorias hierárquicas de produtos (pai e filhos)'
+}
+
+Table product {
+  id integer [pk, increment]
+  bling_id bigint [unique, null]
+  code varchar [unique]
+  name varchar
+  stock_quantity int
+  price decimal(10,2)
+  stock int [default: 0]
+  promotion int [default: 0]
+  width decimal(5,2) [null]
+  height decimal(5,2) [null]
+  depth decimal(5,2) [null]
+  images text
+  description text [null]
+  category_id integer [ref: > category.id, null]
+  synchronized boolean [default: false]
+  status product_status [default: 'active']
+  created_at timestamp [default: `now()`]
+  updated_at timestamp
+  Note: 'Produtos do e-commerce sincronizados com o Bling ERP'
+}
+
+Table wishlist_items {
+  id integer [pk, increment]
+  user_id integer [ref: > users.id]
+  product_id integer [ref: > product.id]
+  created_at timestamp [default: `now()`]
+  Note: 'Produtos salvos na lista de desejos dos usuários'
+}
+
+Table reviews {
+  id integer [pk, increment]
+  user_id integer [ref: > users.id]
+  product_id integer [ref: > product.id]
+  rating int [default: 5]
+  comment text [null]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp
+  Note: 'Avaliações de produtos feitas por usuários'
+}
+
+Table orders {
+  id integer [pk, increment]
+  bling_id bigint [unique, null]
+  user_id integer [ref: > users.id]
+  status order_status [default: 'pending']
+  total_amount decimal(10,2) [default: 0]
+  shipping_cost decimal(10,2) [default: 0]
+  discount decimal(10,2) [default: 0]
+  synchronized boolean [default: false]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp
+  Note: 'Pedidos confirmados de usuários com integração Bling'
+}
+
+Table order_items {
+  id integer [pk, increment]
+  order_id integer [ref: > orders.id]
+  product_id integer [ref: > product.id]
+  quantity int [default: 1]
+  price decimal(10,2)
+  subtotal decimal(10,2)
+  Note: 'Itens que compõem um pedido'
+}
+
+Table payment_methods {
+  id integer [pk, increment]
+  bling_id bigint [unique]
+  description varchar
+  payment_type int
+  status int [default: 1]
+  fixed boolean [default: false]
+  default_method boolean [default: false]
+  purpose int [null]
+  interest decimal(10,2) [default: 0]
+  fine decimal(10,2) [default: 0]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp
+  Note: 'Formas de pagamento sincronizadas do Bling ERP'
+}
+
+Table payments {
+  id integer [pk, increment]
+  bling_id bigint [null]
+  user_id integer [ref: > users.id]
+  order_id integer [ref: > orders.id]
+  payment_method_id integer [ref: > payment_methods.id]
+  amount decimal(10,2)
+  status payment_status [default: 'pending']
+  transaction_id varchar [null]
+  payment_link varchar [null]
+  paid_at timestamp [null]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp
+  Note: 'Pagamentos realizados por usuários vinculados a pedidos'
+}
+
+Table invoices {
+  id integer [pk, increment]
+  bling_id bigint [unique, null]
+  order_id integer [ref: > orders.id]
+  user_id integer [ref: > users.id]
+  number varchar [null]
+  serie varchar [null]
+  access_key varchar [null]
+  status invoice_status [default: 'pending']
+  xml_url varchar [null]
+  pdf_url varchar [null]
+  issued_at timestamp [null]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp
+  Note: 'Notas fiscais eletrônicas (NFC-e) integradas ao Bling ERP'
+}
+
+// ======================
+// RELACIONAMENTOS
+// ======================
+
+Ref: address.user_id > users.id
+Ref: carts.user_id > users.id
+Ref: cart_items.cart_id > carts.id
+Ref: cart_items.product_id > product.id
+Ref: product.category_id > category.id
+Ref: category.parent_id > category.id
+Ref: wishlist_items.user_id > users.id
+Ref: wishlist_items.product_id > product.id
+Ref: reviews.user_id > users.id
+Ref: reviews.product_id > product.id
+Ref: orders.user_id > users.id
+Ref: order_items.order_id > orders.id
+Ref: order_items.product_id > product.id
+Ref: payments.user_id > users.id
+Ref: payments.order_id > orders.id
+Ref: payments.payment_method_id > payment_methods.id
+Ref: invoices.order_id > orders.id
+Ref: invoices.user_id > users.id
