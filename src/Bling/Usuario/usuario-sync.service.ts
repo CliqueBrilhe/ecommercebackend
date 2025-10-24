@@ -5,7 +5,7 @@ import { Repository } from 'typeorm';
 import { User } from '../../Modules/User/entities/user.entity';
 import { UsuarioService } from './usuario.service';
 import { styledLog } from '../../utils/log-style.util';
-import { SyncResult } from '../Core/types/sync-result.interface';
+import { SyncResult } from '../core/types/sync-result.interface';
 
 @Injectable()
 export class UsuarioSyncService {

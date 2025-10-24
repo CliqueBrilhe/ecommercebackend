@@ -1,6 +1,6 @@
 // src/Bling/usuario/usuario.service.ts
 import { Injectable, Logger } from '@nestjs/common';
-import { blingSalesHttp } from '../Core/bling-http';
+import { blingSalesHttp } from '../core/bling-http';
 
 @Injectable()
 export class UsuarioService {

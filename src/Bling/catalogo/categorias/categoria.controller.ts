@@ -13,7 +13,7 @@ export class CategoriaController {
 
   @Get()
   async listarCategoriasDireto() {
-    styledLog('categories', '🔍 Testando conexão com API do Bling...', 'cyan');
+    styledLog('categories', '🔍 Testando conexão com a API do Bling...', 'cyan');
     return this.categoriaService.getCategories();
   }
 
@@ -25,11 +25,11 @@ export class CategoriaController {
 }
 
 /*
-🗓 24/10/2025 - 18:35
-✨ Novo controller dedicado às categorias do Bling.
+🗓 24/10/2025 - 23:00
+✅ Controlador revisado e padronizado.
 --------------------------------------------
 📘 Lógica:
-- GET /bling/catalogo/categorias → testa comunicação com a API.
-- POST /bling/catalogo/categorias/sync → sincroniza manualmente.
+- GET: testa comunicação direta com API do Bling.
+- POST /sync: executa sincronização manual de categorias.
 by: gabbu (github: gabriellesote) ദ്ദി(˵ •̀ ᴗ - ˵ ) ✧
 */

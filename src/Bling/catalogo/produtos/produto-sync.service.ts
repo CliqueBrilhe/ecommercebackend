@@ -5,7 +5,7 @@ import { Repository } from 'typeorm';
 import { Product } from '../../../Modules/Product/entities/product.entity';
 import { Category } from '../../../Modules/Category/entities/category.entity';
 import { ProdutoService } from './produto.service';
-import { SyncResult } from '../../Core/types/sync-result.interface';
+import { SyncResult } from '../../core/types/sync-result.interface';
 import { styledLog } from '../../../utils/log-style.util';
 
 @Injectable()
