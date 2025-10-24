@@ -1,62 +1,96 @@
 // src/Modules/Order/entities/order.entity.ts
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
-import { Product } from '../../Product/entities/product.entity';
-import { User } from '../../User/entities/user.entity';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  OneToMany,
+  OneToOne,
+  CreateDateColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
+import { User } from '../../User/entities/user.entity';
+import { OrderItem } from './order-item.entity';
+import { Payment } from '../../Payment/entities/payment.entity';
+import { Invoice } from '../../Invoice/entities/invoice.entity';
 
-export type OrderStatus = 'under_review' | 'approved' | 'rejected';
+export type OrderStatus =
+  | 'pending'
+  | 'paid'
+  | 'shipped'
+  | 'delivered'
+  | 'cancelled';
 
-@Entity({ name: 'order' })
+@Entity({ name: 'orders' })
 export class Order {
   @PrimaryGeneratedColumn()
-  @ApiProperty({ description: 'ID do pedido' })
+  @ApiProperty({ description: 'ID interno do pedido' })
   id: number;
 
-  @ManyToOne(() => Product)
-  @JoinColumn()
-  @ApiProperty({ description: 'Produto associado ao pedido', type: () => Product })
-  product: Product;
+  @Column({ unique: true, nullable: true })
+  @ApiProperty({ description: 'ID do pedido no Bling ERP', required: false })
+  blingId?: number;
 
-  @Column('int')
-  @ApiProperty({ description: 'Quantidade do produto no pedido' })
-  quantity: number;
+  @ManyToOne(() => User, (user) => user.orders)
+  @ApiProperty({ description: 'Usuário que realizou o pedido' })
+  user: User;
 
-  @Column({ default: () => 'CURRENT_TIMESTAMP' })
-  @ApiProperty({ description: 'Data do pedido', readOnly: true })
-  date: Date;
+  @OneToMany(() => OrderItem, (item) => item.order, { cascade: true })
+  @ApiProperty({ description: 'Itens do pedido' })
+  items: OrderItem[];
 
-  @Column('decimal', { precision: 10, scale: 2 })
-  @ApiProperty({ description: 'Valor do produto no pedido' })
-  productValue: number;
+  @OneToMany(() => Payment, (payment) => payment.order, { cascade: true })
+  @ApiProperty({ description: 'Pagamentos associados ao pedido' })
+  payments: Payment[];
 
-  @Column('decimal', { precision: 10, scale: 2 })
-  @ApiProperty({ description: 'Valor do frete do pedido' })
-  shippingValue: number;
+  @OneToOne(() => Invoice, (invoice) => invoice.order, { cascade: true })
+  @ApiProperty({ description: 'Nota fiscal gerada para o pedido', required: false })
+  invoice?: Invoice;
 
-  @Column({
-    type: 'simple-enum',
-    enum: ['under_review', 'approved', 'rejected'],
-    default: 'under_review',
+  @Column({ type: 'enum', enum: ['pending', 'paid', 'shipped', 'delivered', 'cancelled'], default: 'pending' })
+  @ApiProperty({
+    description: 'Status atual do pedido',
+    enum: ['pending', 'paid', 'shipped', 'delivered', 'cancelled'],
+    default: 'pending',
   })
-  @ApiProperty({ description: 'Status do pedido', enum: ['under_review', 'approved', 'rejected'], default: 'under_review' })
   status: OrderStatus;
 
-  @ManyToOne(() => User)
-  @JoinColumn()
-  @ApiProperty({ description: 'Usuário que fez o pedido', type: () => User })
-  user: User;
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  @ApiProperty({ description: 'Valor total do pedido' })
+  totalAmount: number;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  @ApiProperty({ description: 'Valor do frete' })
+  shippingCost: number;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  @ApiProperty({ description: 'Desconto aplicado no pedido' })
+  discount: number;
+
+  @Column({ default: false })
+  @ApiProperty({ description: 'Indica se o pedido já foi sincronizado com o Bling ERP' })
+  synchronized: boolean;
+
+  @CreateDateColumn()
+  @ApiProperty({ description: 'Data de criação do pedido' })
+  createdAt: Date;
+
+  @UpdateDateColumn()
+  @ApiProperty({ description: 'Data da última atualização do pedido' })
+  updatedAt: Date;
 }
 
 /*
 Histórico de alterações:
-Edição: 15/10/2025 
-- Refatoração de nomenclaturas para inglês (entity, campos e tipos)
-Edição: 16/10/2025
-- Adicionados decorators do Swagger (@ApiProperty) para documentação de todos os campos
+Edição: 24/10/2025 - 17:10
+- Criada entidade Order integrada ao fluxo Bling (pedidos de venda)
+- Relacionada a User, OrderItem, Payment e Invoice
+- Adicionados campos fiscais e financeiros
 --------------------------------------------
 Explicação da lógica:
-Entidade que representa um pedido, relacionando produto e usuário,
-com campos de quantidade, valor do produto, valor do frete, status
-e data de criação.
-by: gabbu (github: gabriellesote)
+A entidade Order representa o pedido confirmado de um usuário.
+Conecta-se ao usuário comprador, aos itens do pedido, aos pagamentos
+e à nota fiscal emitida. É a base para sincronização de pedidos de venda no Bling ERP.
+by: gabbu (github: gabriellesote) ✧
 */

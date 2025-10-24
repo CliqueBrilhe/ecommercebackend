@@ -12,7 +12,9 @@ import { Address } from '../../Address/entities/address.entity';
 import { Cart } from '../../Cart/entities/cart.entity';
 import { Order } from '../../Order/entities/order.entity';
 import { Invoice } from '../../Invoice/entities/invoice.entity';
-import { Payment } from '../../Payment/entities/payment.entity'; // ✅ novo import
+import { Payment } from '../../Payment/entities/payment.entity';
+import { WishlistItem } from '../../Wishlist/entities/wishlist-item.entity';
+import { Review } from '../../Review/entities/review.entity';
 
 export type UserType = 'admin' | 'common';
 export type UserStatus = 'active' | 'inactive' | 'deleted' | 'no_activity';
@@ -52,7 +54,11 @@ export class User {
     enum: ['admin', 'common'],
     default: 'common',
   })
-  @ApiProperty({ description: 'Tipo de usuário no sistema', enum: ['admin', 'common'], default: 'common' })
+  @ApiProperty({
+    description: 'Tipo de usuário no sistema',
+    enum: ['admin', 'common'],
+    default: 'common',
+  })
   userType: UserType;
 
   @Column({
@@ -75,6 +81,7 @@ export class User {
   @ApiProperty({ description: 'Indica se o usuário já foi sincronizado com o Bling ERP' })
   synchronized: boolean;
 
+  // Relações principais
   @OneToMany(() => Address, (address) => address.user, { cascade: true })
   @ApiProperty({ description: 'Lista de endereços associados ao usuário' })
   addresses: Address[];
@@ -95,6 +102,15 @@ export class User {
   @ApiProperty({ description: 'Pagamentos realizados pelo usuário' })
   payments: Payment[];
 
+  // Relações extras (experiência do cliente)
+  @OneToMany(() => WishlistItem, (item) => item.user, { cascade: true })
+  @ApiProperty({ description: 'Itens salvos na lista de desejos do usuário', required: false })
+  wishlistItems?: WishlistItem[];
+
+  @OneToMany(() => Review, (review) => review.user, { cascade: true })
+  @ApiProperty({ description: 'Avaliações de produtos feitas pelo usuário', required: false })
+  reviews?: Review[];
+
   @CreateDateColumn()
   @ApiProperty({ description: 'Data de criação do registro do usuário' })
   createdAt: Date;
@@ -106,16 +122,14 @@ export class User {
 
 /*
 Histórico de alterações:
-Edição: 23/10/2025 - 20:45
-- Adicionado relacionamento com Payment (1:N)
-- Corrigidos e padronizados todos os decorators @ApiProperty
-- Import da entidade Payment
+Edição: 25/10/2025 - 00:30
+- Adicionados relacionamentos com WishlistItem e Review
+- Mantidos relacionamentos principais com Address, Cart, Order, Invoice e Payment
 --------------------------------------------
 Explicação da lógica:
 A entidade User representa clientes e administradores do sistema Clique e Brilhe.
-Possui relacionamentos diretos com Address, Cart, Order, Invoice e Payment.
-Cada usuário pode ter múltiplos endereços, pedidos, notas fiscais e pagamentos,
-centralizando toda a jornada comercial e garantindo integridade fiscal e
-sincronização com o Bling ERP.
+Além dos relacionamentos principais (pedidos, pagamentos, endereços, etc.),
+foram adicionados relacionamentos extras com WishlistItem e Review para permitir
+futuras expansões de funcionalidades de experiência do cliente.
 by: gabbu (github: gabriellesote) ✧
 */

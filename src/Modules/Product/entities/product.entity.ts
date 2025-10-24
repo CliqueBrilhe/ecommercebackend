@@ -1,12 +1,18 @@
+// src/Modules/Product/entities/product.entity.ts
 import {
   Entity,
   PrimaryGeneratedColumn,
   Column,
   ManyToOne,
+  OneToMany,
   CreateDateColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { Category } from '../../Category/entities/category.entity';
+import { CartItem } from '../../Cart/entities/cart-item.entity';
+import { OrderItem } from '../../Order/entities/order-item.entity';
+import { WishlistItem } from '../../Wishlist/entities/wishlist-item.entity';
+import { Review } from '../../Review/entities/review.entity';
 import { ApiProperty } from '@nestjs/swagger';
 
 @Entity({ name: 'product' })
@@ -16,7 +22,7 @@ export class Product {
   id: number;
 
   @Column({ type: 'bigint', name: 'bling_id', nullable: true, unique: true })
-  @ApiProperty({ description: 'ID do produto no Bling', required: false, nullable: true })
+  @ApiProperty({ description: 'ID do produto no Bling', required: false })
   blingId: number | null;
 
   @Column({ unique: true })
@@ -44,15 +50,15 @@ export class Product {
   promotion: number;
 
   @Column('decimal', { precision: 5, scale: 2, nullable: true })
-  @ApiProperty({ description: 'Largura do produto', required: false, nullable: true })
+  @ApiProperty({ description: 'Largura do produto', required: false })
   width: number;
 
   @Column('decimal', { precision: 5, scale: 2, nullable: true })
-  @ApiProperty({ description: 'Altura do produto', required: false, nullable: true })
+  @ApiProperty({ description: 'Altura do produto', required: false })
   height: number;
 
   @Column('decimal', { precision: 5, scale: 2, nullable: true })
-  @ApiProperty({ description: 'Profundidade do produto', required: false, nullable: true })
+  @ApiProperty({ description: 'Profundidade do produto', required: false })
   depth: number;
 
   @Column('simple-array', { nullable: false, default: '' })
@@ -60,7 +66,7 @@ export class Product {
   images: string[];
 
   @Column('text', { nullable: true })
-  @ApiProperty({ description: 'Descrição do produto', required: false, nullable: true })
+  @ApiProperty({ description: 'Descrição do produto', required: false })
   description: string;
 
   @ManyToOne(() => Category, (category) => category.products, {
@@ -70,12 +76,26 @@ export class Product {
   @ApiProperty({ description: 'Categoria do produto', required: false, type: () => Category })
   category?: Category;
 
+  @OneToMany(() => CartItem, (cartItem) => cartItem.product)
+  @ApiProperty({ description: 'Itens de carrinho que incluem este produto' })
+  cartItems: CartItem[];
+
+  @OneToMany(() => OrderItem, (orderItem) => orderItem.product)
+  @ApiProperty({ description: 'Itens de pedido que incluem este produto' })
+  orderItems: OrderItem[];
+
+  @OneToMany(() => WishlistItem, (wishlistItem) => wishlistItem.product)
+  @ApiProperty({ description: 'Listas de desejos que contêm este produto' })
+  wishlistItems: WishlistItem[];
+
+  @OneToMany(() => Review, (review) => review.product)
+  @ApiProperty({ description: 'Avaliações associadas a este produto' })
+  reviews: Review[];
+
   @Column({ default: false })
   @ApiProperty({ description: 'Indica se o produto foi sincronizado com o Bling', default: false })
   synchronized: boolean;
 
-
-  // 👇 novo campo
   @Column({
     type: 'varchar',
     length: 20,
@@ -99,15 +119,12 @@ export class Product {
 
 /*
 Histórico de alterações:
-Edição: 15/10/2025 
-// Refatoração de nomenclaturas para inglês (entity, campos, relacionamentos e arrays)
-
-1. 16/10/2025
-2. Adicionados decorators do Swagger (@ApiProperty) para documentação de todos os campos do Product
+Edição: 25/10/2025 - 01:00
+- Adicionados relacionamentos com CartItem, OrderItem, WishlistItem e Review
 --------------------------------------------
 Explicação da lógica:
-Esta entity representa os produtos do e-commerce, armazenando informações como código, nome,
-preço, estoque, dimensões, imagens, descrição, categoria associada e status de sincronização
-com o Bling. Os campos updatedAt e createdAt são gerenciados automaticamente pelo TypeORM.
-by: gabbu (github: gabriellesote)
+A entidade Product representa os produtos disponíveis no e-commerce e sincronizados com o Bling ERP.
+Agora se conecta também com itens de carrinho, pedidos, listas de desejos e avaliações,
+permitindo rastrear o ciclo completo do produto desde o interesse até a compra e feedback do cliente.
+by: gabbu (github: gabriellesote) ✧
 */
