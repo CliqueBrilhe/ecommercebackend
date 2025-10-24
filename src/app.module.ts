@@ -13,7 +13,7 @@ import { CategoryModule } from './Modules/Category/category.module';
 import { UserModule } from './Modules/User/user.module';
 import { OrderModule } from './Modules/Order/order.module';
 import { BlingSyncModule } from 'Bling/sync/bling-sync.module';
-import { WishlistModule } from './modules/wishlist/wishlist.module';
+
 
 /**
  * Função para obter a configuração do TypeORM baseada no ambiente.
@@ -52,8 +52,7 @@ const getOrmConfig = (configService: ConfigService): TypeOrmModuleOptions => {
     CategoryModule,
     UserModule,
     OrderModule,
-    BlingSyncModule,
-    WishlistModule
+    BlingSyncModule
   ],
 })
 export class AppModule {}
