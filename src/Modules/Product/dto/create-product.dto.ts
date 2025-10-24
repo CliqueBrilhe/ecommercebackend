@@ -1,5 +1,12 @@
-// src/product/dto/create-product.dto.ts
-import { IsNumber, IsString, IsArray, IsOptional } from 'class-validator';
+// src/Modules/Product/dto/create-product.dto.ts
+import {
+  IsNumber,
+  IsString,
+  IsArray,
+  IsOptional,
+  IsInt,
+  Min,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateProductDto {
@@ -11,52 +18,71 @@ export class CreateProductDto {
   @IsString()
   name: string;
 
-  @ApiProperty({ description: 'Quantidade em estoque' })
-  @IsNumber()
-  stockQuantity: number;
+  @ApiProperty({ description: 'Quantidade em estoque disponível' })
+  @IsInt({ message: 'A quantidade deve ser um número inteiro' })
+  @Min(0, { message: 'A quantidade não pode ser negativa' })
+  stock: number;
 
   @ApiProperty({ description: 'Preço do produto' })
-  @IsNumber()
+  @IsNumber({}, { message: 'O preço deve ser um número' })
   price: number;
 
-  @ApiPropertyOptional({ description: 'Valor promocional (opcional)' })
+  @ApiPropertyOptional({
+    description: 'Percentual de promoção aplicado (0–100)',
+    example: 10,
+  })
   @IsOptional()
-  @IsNumber()
+  @IsInt({ message: 'O valor da promoção deve ser um número inteiro' })
   promotion?: number;
 
-  @ApiProperty({ description: 'Largura do produto' })
-  @IsNumber()
-  width: number;
+  @ApiPropertyOptional({ description: 'Largura do produto (cm)', example: 5.5 })
+  @IsOptional()
+  @IsNumber({}, { message: 'A largura deve ser um número' })
+  width?: number;
 
-  @ApiProperty({ description: 'Altura do produto' })
-  @IsNumber()
-  height: number;
+  @ApiPropertyOptional({ description: 'Altura do produto (cm)', example: 10.2 })
+  @IsOptional()
+  @IsNumber({}, { message: 'A altura deve ser um número' })
+  height?: number;
 
-  @ApiProperty({ description: 'Profundidade do produto' })
-  @IsNumber()
-  depth: number;
+  @ApiPropertyOptional({ description: 'Profundidade do produto (cm)', example: 2.3 })
+  @IsOptional()
+  @IsNumber({}, { message: 'A profundidade deve ser um número' })
+  depth?: number;
 
-  @ApiProperty({ description: 'URLs das imagens do produto', type: [String] })
+  @ApiPropertyOptional({
+    description: 'URLs das imagens do produto',
+    type: [String],
+    example: ['https://cdn.cliqueebrilhe.com/produto123.jpg'],
+  })
+  @IsOptional()
   @IsArray()
-  images: string[];
+  @IsString({ each: true })
+  images?: string[];
 
-  @ApiProperty({ description: 'Descrição do produto' })
+  @ApiPropertyOptional({
+    description: 'Descrição detalhada do produto',
+    example: 'Base líquida de alta cobertura e longa duração.',
+  })
+  @IsOptional()
   @IsString()
-  description: string;
+  description?: string;
 
   @ApiProperty({ description: 'ID da categoria associada' })
-  @IsNumber()
+  @IsNumber({}, { message: 'O ID da categoria deve ser numérico' })
   categoryId: number;
 }
 
 /*
 Histórico de alterações:
-Edição: 15/10/2025 - Refatoração de nomenclaturas para inglês (DTO, campos e tipos)
-Edição: 16/10/2025 - Adicionados decorators do Swagger (@ApiProperty, @ApiPropertyOptional)
+Edição: 26/10/2025 - 01:40
+- Renomeado stockQuantity → stock para alinhar com entity
+- Tornados width, height e depth opcionais
+- Ajustado promotion como percentual (int)
+- Adicionado IsString({ each: true }) em images
 --------------------------------------------
 Explicação da lógica:
-DTO define os campos necessários para criar um produto, incluindo código, nome, preço,
-estoque, dimensões, imagens, descrição e referência à categoria.
-Validações aplicadas usando class-validator e documentado no Swagger.
-by: gabbu (github: gabriellesote)
+DTO usado para criação de produtos, alinhado à entidade Product.
+Remove campos internos e valida dimensões e estoque com segurança.
+by: gabbu (github: gabriellesote) ✧
 */

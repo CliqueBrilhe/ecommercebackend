@@ -25,32 +25,24 @@ export class OrderService {
     private readonly userRepo: Repository<User>,
   ) {}
 
-  /**
-   * Cria um novo pedido, associando usuário, produtos e valores.
-   */
   async create(createOrderDto: CreateOrderDto): Promise<Order> {
     const { userId, items, shippingCost = 0, discount = 0 } = createOrderDto;
 
     const user = await this.userRepo.findOne({ where: { id: userId } });
     if (!user) throw new NotFoundException('Usuário não encontrado.');
 
-    if (!items || items.length === 0) {
-      throw new BadRequestException('O pedido deve conter pelo menos um item.');
-    }
+    if (!items?.length) throw new BadRequestException('O pedido deve conter pelo menos um item.');
 
     let totalAmount = 0;
     const orderItems: OrderItem[] = [];
 
-    // Processar cada item do pedido
     for (const item of items) {
       const product = await this.productRepo.findOne({ where: { id: item.productId } });
       if (!product) throw new NotFoundException(`Produto ID ${item.productId} não encontrado.`);
 
-      if (product.stock < item.quantity) {
-        throw new BadRequestException(`Estoque insuficiente para o produto ${product.name}.`);
-      }
+      if (product.stock < item.quantity)
+        throw new BadRequestException(`Estoque insuficiente para ${product.name}.`);
 
-      // Calcula subtotal e atualiza estoque
       const subtotal = product.price * item.quantity;
       totalAmount += subtotal;
 
@@ -63,10 +55,10 @@ export class OrderService {
         price: product.price,
         subtotal,
       });
+
       orderItems.push(orderItem);
     }
 
-    // Cria o pedido principal
     const order = this.orderRepo.create({
       user,
       items: orderItems,
@@ -77,12 +69,9 @@ export class OrderService {
       synchronized: false,
     });
 
-    return await this.orderRepo.save(order);
+    return this.orderRepo.save(order);
   }
 
-  /**
-   * Retorna todos os pedidos com suas relações principais.
-   */
   async findAll(): Promise<Order[]> {
     return this.orderRepo.find({
       relations: ['user', 'items', 'items.product', 'payments', 'invoice'],
@@ -90,9 +79,6 @@ export class OrderService {
     });
   }
 
-  /**
-   * Retorna todos os pedidos de um usuário via CPF.
-   */
   async findByCpf(cpf: string): Promise<Order[]> {
     return this.orderRepo.find({
       where: { user: { cpf } },
@@ -101,9 +87,6 @@ export class OrderService {
     });
   }
 
-  /**
-   * Atualiza dados de um pedido existente.
-   */
   async update(id: number, updateOrderDto: UpdateOrderDto): Promise<Order> {
     const order = await this.orderRepo.findOne({ where: { id }, relations: ['items'] });
     if (!order) throw new NotFoundException('Pedido não encontrado.');
@@ -112,29 +95,21 @@ export class OrderService {
     return this.orderRepo.save(order);
   }
 
-  /**
-   * Remove um pedido pelo ID.
-   */
   async delete(id: number): Promise<void> {
     const result = await this.orderRepo.delete(id);
-    if (result.affected === 0) {
+    if (result.affected === 0)
       throw new NotFoundException('Pedido não encontrado para exclusão.');
-    }
   }
 }
 
 /*
 Histórico de alterações:
-Edição: 24/10/2025 - 22:55
-- Reescrito para alinhar com nova entidade Order e OrderItem
-- Implementado cálculo automático do valor total (subtotal + frete - desconto)
-- Controle de estoque e relação ManyToOne/OneToMany com Product e User
-- Adicionadas validações e exceptions padronizadas
+Edição: 26/10/2025 - 00:15
+- Ajustado método create para aceitar userId via token
+- Mantida lógica de cálculo de subtotal e atualização de estoque
 --------------------------------------------
 Explicação da lógica:
-O OrderService gerencia a criação, listagem, atualização e exclusão de pedidos.
-Durante a criação, ele valida o estoque dos produtos, calcula subtotal e total,
-cria os itens do pedido e relaciona o pedido ao usuário. Inclui controle de frete,
-desconto e status inicial "pending". Integra diretamente com Product e User.
-by: gabbu (github: gabriellesote) ദ്ദി(˵ •̀ ᴗ - ˵ ) ✧
+O serviço de pedidos cria e gerencia pedidos, calculando valores totais,
+atualizando estoque e mantendo o vínculo entre produtos, usuário e pagamentos.
+by: gabbu (github: gabriellesote) ✧
 */

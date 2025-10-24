@@ -6,14 +6,13 @@ import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
 
 import { BlingModule } from './Bling/bling.module';
 
-
+import { AuthModule } from 'Modules/Auth/auth.module';
 
 import { ProductModule } from './Modules/Product/product.module';
 import { CategoryModule } from './Modules/Category/category.module';
 import { UserModule } from './Modules/User/user.module';
 import { OrderModule } from './Modules/Order/order.module';
 import { BlingSyncModule } from 'Bling/sync/bling-sync.module';
-
 
 /**
  * Função para obter a configuração do TypeORM baseada no ambiente.
@@ -52,7 +51,8 @@ const getOrmConfig = (configService: ConfigService): TypeOrmModuleOptions => {
     CategoryModule,
     UserModule,
     OrderModule,
-    BlingSyncModule
+    BlingSyncModule,
+    AuthModule,
   ],
 })
 export class AppModule {}

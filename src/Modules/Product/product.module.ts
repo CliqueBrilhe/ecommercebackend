@@ -1,24 +1,28 @@
-// src/product/product.module.ts
+// src/Modules/Product/product.module.ts
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ProductController } from './product.controller';
-import { Product } from '../Product/entities/product.entity';
-import { Category } from '../Category/entities/category.entity';
-import { CloudinaryModule } from '../../Core/cloudinary/cloudinary.module';
 import { ProductService } from './product.service';
+import { Product } from './entities/product.entity';
+import { Category } from '../Category/entities/category.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Product, Category]), CloudinaryModule],
+  imports: [TypeOrmModule.forFeature([Product, Category])],
   controllers: [ProductController],
   providers: [ProductService],
+  exports: [ProductService],
 })
 export class ProductModule {}
 
-// --------------------------------------------------------------
-// Edição: 15/10/2025
-// Refatoração de nomenclaturas para inglês (module, controller, entity, service e imports)
-// --------------------------------------------------------------
-// Explicação da lógica:
-// Este módulo registra o controller e service de produtos, além de importar as entities
-// Product e Category para integração com o TypeORM e o CloudinaryModule para upload de imagens.
-// by: gabbu (github: gabriellesote)
+/*
+Histórico de alterações:
+Edição: 26/10/2025 - 01:25
+- Removido CloudinaryModule
+- Padronizado repositório e exportação do ProductService
+--------------------------------------------
+Explicação da lógica:
+O ProductModule centraliza a lógica de produtos, integrando Product e Category.
+Cloudinary foi removido, e o módulo agora fornece o serviço de produtos
+para uso em outros módulos, como pedidos e carrinho.
+by: gabbu (github: gabriellesote) ✧
+*/
