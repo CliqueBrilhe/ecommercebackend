@@ -1,12 +1,12 @@
-// src/Bling/core/bling-sync.scheduler.ts
+// src/Bling/Core/bling-sync.scheduler.ts
 
 import { Injectable } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { performance } from 'perf_hooks';
-import { CategoriaSyncService } from '../Catalogo/Categorias/categoria-sync.service';
-import { ProdutoSyncService } from '../Catalogo/Produtos/produto-sync.service';
+import { CategoriaSyncService } from '../catalogo/categorias/categoria-sync.service';
+import { ProdutoSyncService } from '../catalogo/produtos/produto-sync.service';
 import { SyncLog } from './entities/sync-log.entity';
 import {
   styledLog,

@@ -1,7 +1,7 @@
 // src/Bling/catalogo/catalogo.module.ts
 import { Module } from '@nestjs/common';
-import { CategoriaModule } from './Categorias/categoria.module';
-import { ProdutoModule } from './Produtos/produto.module';
+import { CategoriaModule } from './categorias/categoria.module';
+import { ProdutoModule } from './produtos/produto.module';
 
 @Module({
   imports: [

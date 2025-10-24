@@ -1,111 +1,76 @@
-// src/Bling/core/bling.controller.ts
-
-
-
-import { Controller, Post, Headers, Logger, Body } from '@nestjs/common';
+// src/Bling/Core/bling.controller.ts
+import { Controller, Post, Body, Headers, Logger } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { styledLog, logSeparator } from '../../utils/log-style.util';
+
+/**
+ * Enum centralizado para os tipos de eventos do Bling
+ */
+export enum BlingEventType {
+  UPSERT = 'upsert',
+  DELETED = 'deleted',
+}
 
 @Controller('bling/core')
 export class BlingController {
   private readonly logger = new Logger(BlingController.name);
 
+  constructor(private readonly eventEmitter: EventEmitter2) {}
+
   /**
-   * 📩 Webhook principal (criação, atualização e remoção)
-   * Recebe eventos do Bling ERP e registra logs detalhados.
+   * 📩 Webhook principal do Bling
+   * Recebe eventos de qualquer recurso (produtos, contatos, vendas, etc.)
+   * e emite eventos internos no sistema para os módulos ouvintes.
    */
   @Post('webhook')
-  async handleWebhook(
-    @Body() body: any,
-    @Headers() headers: Record<string, string>,
-  ) {
-    logSeparator('BLING WEBHOOK', 'magenta');
-    this.logger.debug(
-      `📦 Corpo bruto recebido:\n${JSON.stringify(body, null, 2)}`,
+  async handleWebhook(@Body() body: any, @Headers() headers: Record<string, string>) {
+    logSeparator('WEBHOOK BLING', 'magenta');
+
+    const payload = body.data && typeof body.data === 'object' ? body.data : body;
+    const evento = body.event || 'desconhecido';
+    const recurso = body.resource || 'desconhecido';
+    const id = Number(payload.id);
+
+    styledLog(
+      'webhook',
+      `📬 Evento recebido do Bling → Tipo: ${evento} | Recurso: ${recurso} | ID: ${id}`,
+      'cyan',
     );
 
-    // 🚨 Validação inicial
-    if (!body || Object.keys(body).length === 0) {
-      styledLog(
-        'warning',
-        '⚠️ Webhook recebido com corpo vazio ou formato inválido.',
-        'brightYellow',
-      );
-      return { ok: false, message: 'Empty or invalid payload' };
+    // 🚨 Validação
+    if (!id || isNaN(id)) {
+      styledLog('warning', '⚠️ ID inválido ou ausente no payload.', 'brightYellow');
+      return { ok: false, message: 'ID inválido' };
     }
 
-    try {
-      // 🔹 Normaliza payload (compatível v2/v3)
-      const payload =
-        body.data && typeof body.data === 'object' ? body.data : body;
-      const event = body.event || 'unknown';
-      const resource = body.resource || 'unknown';
-      const id = Number(payload.id);
+    // 🗑️ Exclusão
+    const exclusao =
+      evento?.includes(BlingEventType.DELETED) ||
+      (Object.keys(payload).length === 1 && 'id' in payload);
 
-      styledLog(
-        'webhook',
-        `📬 Evento detectado: ${event} | Recurso: ${resource} | ID: ${id || 'N/A'}`,
-        'cyan',
-      );
-
-      // 🔍 Identifica o tipo de operação
-      if (!id || isNaN(id)) {
-        styledLog(
-          'warning',
-          `⚠️ Payload sem ID válido. Evento: ${event}`,
-          'brightYellow',
-        );
-        return { ok: false, message: 'Invalid or missing ID' };
-      }
-
-      const isDeleteEvent =
-        event?.includes('deleted') ||
-        (Object.keys(payload).length === 1 && 'id' in payload);
-
-      if (isDeleteEvent) {
-        styledLog(
-          'webhook',
-          `🗑️ Recurso removido no Bling (ID=${id})`,
-          'red',
-        );
-
-        // 🚧 Futuro: emitir evento interno para remover localmente
-        // await this.eventEmitter.emitAsync('bling.resource.deleted', { id, resource });
-
-        return { ok: true, message: 'Resource deletion event received' };
-      }
-
-      // ✅ Caso de criação/atualização
-      styledLog(
-        'webhook',
-        `♻️ Recurso atualizado/criado (ID=${id})`,
-        'green',
-      );
-
-      // 🚧 Futuro: emitir evento interno com base no tipo de recurso
-      // Example:
-      // await this.eventEmitter.emitAsync('bling.resource.upsert', { resource, payload });
-
-      return { ok: true, message: 'Webhook processed successfully' };
-    } catch (error: any) {
-      styledLog(
-        'error',
-        `❌ Erro ao processar webhook: ${error.message}`,
-        'brightRed',
-      );
-      return { ok: false, error: error.message };
+    if (exclusao) {
+      styledLog('webhook', `🗑️ Recurso removido no Bling (ID=${id})`, 'red');
+      this.eventEmitter.emit(`bling.${recurso}.${BlingEventType.DELETED}`, { id, recurso });
+      return { ok: true, message: 'Evento de exclusão processado' };
     }
+
+    // ♻️ Criação ou atualização
+    styledLog('webhook', `♻️ Recurso criado ou atualizado (ID=${id})`, 'green');
+    this.eventEmitter.emit(`bling.${recurso}.${BlingEventType.UPSERT}`, { id, payload });
+
+    return { ok: true, message: 'Evento emitido com sucesso' };
   }
 }
 
-
 /*
-🗓 24/10/2025 - 20:20
-♻️ Refatoração: BlingController agora atua apenas no núcleo (core) de integração.
+🗓 24/10/2025 - 22:10
+♻️ Refatoração: logs em português e enum de eventos padronizado.
 --------------------------------------------
 📘 Lógica:
-- Responsável exclusivamente por receber e tratar webhooks enviados pelo Bling.
-- Gera logs estruturados e detalhados.
-- Identifica eventos de criação, atualização e exclusão.
-- Futuramente poderá acionar sincronizações específicas (ex: produto, contato, pedido).
-by: gabbu (github: gabriellesote) ദ്ദി(˵ •̀ ᴗ - ˵ ) ✧
+- Recebe webhooks universais do Bling (para qualquer tipo de recurso).
+- Emite eventos internos no formato `bling.<recurso>.<ação>`.
+- Ações possíveis: `upsert` (criação/atualização) e `deleted` (remoção).
+- Totalmente desacoplado, permitindo que cada módulo (produtos, usuários, vendas)
+  escute apenas os eventos que lhe interessam via @OnEvent().
+by: gabbu (github: gabriellesote) ദ്ദി(˵ •̀ ᴗ - ˵ ) ✧ +
 */

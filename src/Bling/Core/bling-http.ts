@@ -1,5 +1,4 @@
-// src/Bling/utils/bling-http.ts
-
+// src/Bling/Core/bling-http.ts
 import axios from 'axios';
 import 'dotenv/config';
 
@@ -28,14 +27,20 @@ export const blingSalesHttp = axios.create({
 });
 
 /**
- * Interceptor para logar erros de resposta do Bling (compartilhado)
+ * 🧠 Interceptor de erro compartilhado para ambos os clientes Bling
+ * Exibe logs detalhados em português e mantém o stacktrace original.
  */
 const logBlingError = (error: any) => {
-  console.error('❌ Erro na requisição ao Bling:', {
-    url: error.config?.url,
-    status: error.response?.status,
-    message: error.response?.data || error.message,
-  });
+  const url = error.config?.url;
+  const status = error.response?.status;
+  const message = error.response?.data || error.message;
+
+  console.error('\n❌ Erro na comunicação com a API do Bling:');
+  console.error(`🔗 URL: ${url}`);
+  console.error(`📡 Código de status: ${status}`);
+  console.error(`💬 Mensagem:`, message);
+  console.error('----------------------------------------');
+
   return Promise.reject(error);
 };
 
@@ -43,3 +48,13 @@ const logBlingError = (error: any) => {
 blingCatalogHttp.interceptors.response.use((res) => res, logBlingError);
 blingSalesHttp.interceptors.response.use((res) => res, logBlingError);
 
+/*
+🗓 24/10/2025 - 22:00
+✨ Melhoria: interceptores de erro adicionados com logs descritivos.
+--------------------------------------------
+📘 Lógica:
+- Centraliza a criação dos clientes HTTP do Bling (catálogo e vendas).
+- Adiciona interceptores padronizados com mensagens em português.
+- Facilita o rastreio de erros de integração e debugging.
+by: gabbu (github: gabriellesote) ദ്ദി(˵ •̀ ᴗ - ˵ ) ✧
+*/

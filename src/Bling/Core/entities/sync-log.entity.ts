@@ -1,5 +1,10 @@
 // src/Bling/sync/entities/sync-log.entity.ts
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+} from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 
 @Entity({ name: 'sync_log' })
@@ -21,11 +26,12 @@ export class SyncLog {
 
   @Column({ type: 'varchar', length: 50 })
   @ApiProperty({
-    description: 'Módulo sincronizado (produtos ou categorias)',
+    description:
+      'Módulo sincronizado (produtos, categorias, usuários ou vendas)',
     example: 'products',
-    enum: ['products', 'categories'],
+    enum: ['products', 'categories', 'users', 'sales'],
   })
-  module: 'products' | 'categories';
+  module: 'products' | 'categories' | 'users' | 'sales';
 
   @Column({ type: 'int', default: 0 })
   @ApiProperty({
