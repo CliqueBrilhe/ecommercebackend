@@ -1,18 +1,18 @@
-// src/Bling/sync/services/bling-categorias-sync.service.ts
+// src/Bling/catalogo/categorias/categoria-sync.service.ts
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Category } from '../../../Modules/Category/entities/category.entity';
-import { BlingService } from '../../core/services/bling.service';
-import { SyncResult } from '../types/sync-result.interface';
+import { CategoriaService } from './categoria.service';
+import { SyncResult } from '../../Core/types/sync-result.interface';
 import { styledLog } from '../../../utils/log-style.util';
 
 @Injectable()
-export class BlingCategoriasSyncService {
-  private readonly logger = new Logger(BlingCategoriasSyncService.name);
+export class CategoriaSyncService {
+  private readonly logger = new Logger(CategoriaSyncService.name);
 
   constructor(
-    private readonly blingService: BlingService,
+    private readonly categoriaService: CategoriaService,
     @InjectRepository(Category)
     private readonly categoryRepository: Repository<Category>,
   ) {}
@@ -22,27 +22,16 @@ export class BlingCategoriasSyncService {
    * Cria, atualiza e vincula hierarquias pai/filho.
    */
   async sincronizarCategorias(): Promise<SyncResult> {
-    styledLog(
-      'categories',
-      '🔄 Iniciando sincronização de categorias...',
-      'cyan',
-    );
+    styledLog('categories', '🔄 Iniciando sincronização de categorias...', 'cyan');
 
     try {
-      const categoriasBling = await this.blingService.getCategories();
-
+      const categoriasBling = await this.categoriaService.getCategories();
       if (!Array.isArray(categoriasBling) || categoriasBling.length === 0) {
-        styledLog(
-          'warning',
-          '⚠️ Nenhuma categoria encontrada na API do Bling.',
-          'brightYellow',
-        );
+        styledLog('warning', '⚠️ Nenhuma categoria encontrada na API do Bling.', 'brightYellow');
         return { createdCount: 0, updatedCount: 0 };
       }
 
-      let criadas = 0;
-      let atualizadas = 0;
-      let vinculadas = 0;
+      let criadas = 0, atualizadas = 0, vinculadas = 0;
 
       // 🔹 Criação ou atualização das categorias
       for (const categoria of categoriasBling) {
@@ -60,29 +49,18 @@ export class BlingCategoriasSyncService {
         };
 
         if (categoriaExistente) {
-          await this.categoryRepository.update(
-            categoriaExistente.id,
-            dadosCategoria,
-          );
+          await this.categoryRepository.update(categoriaExistente.id, dadosCategoria);
           atualizadas++;
-          styledLog(
-            'categories',
-            `♻️ Categoria atualizada: ${descricao} (BlingID: ${id})`,
-            'green',
-          );
+          styledLog('categories', `♻️ Categoria atualizada: ${descricao} (BlingID: ${id})`, 'green');
         } else {
           categoriaExistente = this.categoryRepository.create(dadosCategoria);
           await this.categoryRepository.save(categoriaExistente);
           criadas++;
-          styledLog(
-            'categories',
-            `🆕 Categoria criada: ${descricao} (BlingID: ${id})`,
-            'brightGreen',
-          );
+          styledLog('categories', `🆕 Categoria criada: ${descricao} (BlingID: ${id})`, 'brightGreen');
         }
       }
 
-      // 🔹 Vinculação de categorias pai e filho
+      // 🔹 Vinculação pai/filho
       for (const categoria of categoriasBling) {
         if (!categoria.categoriaPai?.id) continue;
 
@@ -115,7 +93,7 @@ export class BlingCategoriasSyncService {
     } catch (error: any) {
       styledLog(
         'categories',
-        `❌ Erro durante a sincronização de categorias: ${error?.message || error}`,
+        `❌ Erro durante sincronização de categorias: ${error?.message || error}`,
         'brightRed',
       );
       return { createdCount: 0, updatedCount: 0 };
@@ -124,13 +102,13 @@ export class BlingCategoriasSyncService {
 }
 
 /*
-🗓 23/10/2025 - 03:35
-✨ Melhoria: logs personalizados com styledLog() + tratamento de erros.
+🗓 24/10/2025 - 18:25
+♻️ Modularização: BlingCategoriasSyncService → CategoriaSyncService.
 --------------------------------------------
 📘 Lógica:
-- Usa styledLog() para logs coloridos e padronizados.
-- Exibe categorias criadas, atualizadas e vinculadas.
-- Adiciona captura de erros e mensagens detalhadas.
-- Mantém contagem SyncResult para uso no scheduler.
+- Sincroniza categorias Bling → banco local.
+- Cria, atualiza e vincula hierarquias pai/filho.
+- Usa CategoriaService para comunicação com API.
+- Logs padronizados com styledLog().
 by: gabbu (github: gabriellesote) ദ്ദി(˵ •̀ ᴗ - ˵ ) ✧
 */

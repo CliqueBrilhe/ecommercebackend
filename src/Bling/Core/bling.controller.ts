@@ -15,7 +15,7 @@ by: gabbu (github: gabriellesote)
 */
 
 import { Controller, Get, Post, Headers, Logger, Body } from '@nestjs/common';
-import { BlingService } from '../services/bling.service';
+import { BlingCatalogoService } from '../services/bling-catalogo.service';
 import { BlingProdutosSyncService } from '../../sync/services/bling-produtos-sync.service';
 import { styledLog, colors, logSeparator } from '../../../utils/log-style.util';
 
@@ -24,7 +24,7 @@ export class BlingController {
   private readonly logger = new Logger(BlingController.name);
 
   constructor(
-    private readonly blingService: BlingService,
+    private readonly blingService: BlingCatalogoService,
     private readonly produtosSync: BlingProdutosSyncService,
   ) {}
 

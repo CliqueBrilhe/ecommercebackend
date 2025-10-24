@@ -1,31 +1,19 @@
-// src/Bling/sync/services/bling-sync.scheduler.ts
-
-/*
-🗓 22/10/2025 - 16:30
-💅 Refatoração: integração total com log-style.util.ts.
---------------------------------------------
-📘 Lógica:
-- Usa styledLog() e cores ANSI para logs visuais e padronizados.
-- Mostra ícones, tempos de execução e ambiente colorido.
-- Mantém registro no banco (SyncLog) com contagens de criação/atualização.
-- Intervalo dinâmico (5min dev / 1h prod).
-edit by: gabbu (gabriellesote) ദ്ദി(˵ •̀ ᴗ - ˵ ) ✧
-*/
+// src/Bling/core/bling-sync.scheduler.ts
 
 import { Injectable } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { performance } from 'perf_hooks';
-import { BlingCategoriasSyncService } from './bling-categorias-sync.service';
-import { BlingProdutosSyncService } from './bling-produtos-sync.service';
-import { SyncLog } from '../entities/sync-log.entity';
+import { CategoriaSyncService } from '../Catalogo/Categorias/categoria-sync.service';
+import { ProdutoSyncService } from '../Catalogo/Produtos/produto-sync.service';
+import { SyncLog } from './entities/sync-log.entity';
 import {
   styledLog,
   colors,
   moduleIcons,
   logSeparator,
-} from '../../../utils/log-style.util';
+} from '../../utils/log-style.util';
 
 @Injectable()
 export class BlingSyncScheduler {
@@ -33,13 +21,15 @@ export class BlingSyncScheduler {
   private readonly frequencyLabel = this.isDev ? '5 minutos' : '1 hora';
 
   constructor(
-    private readonly categoriasSync: BlingCategoriasSyncService,
-    private readonly produtosSync: BlingProdutosSyncService,
+    private readonly categoriaSync: CategoriaSyncService,
+    private readonly produtoSync: ProdutoSyncService,
     @InjectRepository(SyncLog)
     private readonly syncLogRepository: Repository<SyncLog>,
   ) {}
 
-  // 🔹 Função auxiliar para salvar logs no banco
+  /**
+   * Registra logs de sincronização no banco de dados.
+   */
   private async registrarLog(
     module: 'products' | 'categories',
     createdCount: number,
@@ -51,6 +41,7 @@ export class BlingSyncScheduler {
       createdCount,
       updatedCount,
     });
+
     await this.syncLogRepository.save(log);
 
     styledLog(
@@ -60,14 +51,15 @@ export class BlingSyncScheduler {
     );
   }
 
-  // 🔹 CRON job principal (a cada 5 min em dev / 1h em prod)
+  /**
+   * Executa sincronização automática com o Bling.
+   */
   @Cron(
     process.env.NODE_ENV === 'development'
       ? CronExpression.EVERY_5_MINUTES
       : CronExpression.EVERY_HOUR,
   )
   async runScheduledSync() {
-    // Ambiente colorido
     const envLabel = this.isDev
       ? `${colors.cyan}${colors.bold}🧪 DEV${colors.reset}`
       : `${colors.yellow}${colors.bold}☁️ PRODUÇÃO${colors.reset}`;
@@ -87,7 +79,7 @@ export class BlingSyncScheduler {
       // ============================
       logSeparator('CATEGORIES');
       const startCats = performance.now();
-      const resultCats = await this.categoriasSync.sincronizarCategorias();
+      const resultCats = await this.categoriaSync.sincronizarCategorias();
       const timeCats = ((performance.now() - startCats) / 1000).toFixed(2);
 
       styledLog(
@@ -107,7 +99,7 @@ export class BlingSyncScheduler {
       // ============================
       logSeparator('PRODUCTS');
       const startProds = performance.now();
-      const resultProds = await this.produtosSync.sincronizarProdutos();
+      const resultProds = await this.produtoSync.sincronizarProdutos();
       const timeProds = ((performance.now() - startProds) / 1000).toFixed(2);
 
       styledLog(
@@ -127,7 +119,6 @@ export class BlingSyncScheduler {
       // ============================
       logSeparator('SUMMARY');
       const totalTime = ((performance.now() - totalStart) / 1000).toFixed(2);
-
       const countdown = this.isDev ? '🕔 05:00' : '🕐 01:00:00';
 
       styledLog(
@@ -144,3 +135,16 @@ export class BlingSyncScheduler {
     }
   }
 }
+
+
+/*
+🗓 24/10/2025 - 19:15
+♻️ Refatoração: compatibilização com estrutura modular (catalogo/produtos e categorias).
+--------------------------------------------
+📘 Lógica:
+- Usa CategoriaSyncService e ProdutoSyncService do módulo Catalogo.
+- Mantém logs visuais com styledLog() e separadores.
+- Executa sync automático com intervalos dinâmicos (5min dev / 1h prod).
+- Registra logs no banco via SyncLog entity.
+by: gabbu (github: gabriellesote) ദ്ദി(˵ •̀ ᴗ - ˵ ) ✧
+*/
