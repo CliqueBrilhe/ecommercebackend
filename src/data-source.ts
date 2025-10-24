@@ -30,7 +30,7 @@ export const AppDataSource = new DataSource({
   entities: [
     Product,
     Category,
-    User,t
+    User,
     Order,
     OrderItem,
     Address,
