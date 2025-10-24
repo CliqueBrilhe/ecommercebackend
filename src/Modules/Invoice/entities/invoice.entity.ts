@@ -9,7 +9,7 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiHideProperty } from '@nestjs/swagger';
 import { User } from '../../User/entities/user.entity';
 import { Order } from '../../Order/entities/order.entity';
 
@@ -27,20 +27,29 @@ export class Invoice {
   id: number;
 
   @Column({ unique: true, nullable: true })
-  @ApiProperty({ description: 'ID da nota fiscal no Bling ERP', required: false })
+  @ApiProperty({
+    description: 'ID da nota fiscal no Bling ERP',
+    required: false,
+  })
   blingId?: number;
 
   @OneToOne(() => Order, (order) => order.invoice)
   @JoinColumn()
-  @ApiProperty({ description: 'Pedido associado a esta nota fiscal' })
+ @ApiHideProperty() 
   order: Order;
 
   @ManyToOne(() => User, (user) => user.invoices)
-  @ApiProperty({ description: 'Usuário (cliente) associado à nota fiscal' })
+  @ApiProperty({
+    description: 'Usuário (cliente) associado à nota fiscal',
+    type: () => User,
+  })
   user: User;
 
   @Column({ nullable: true })
-  @ApiProperty({ description: 'Número da nota fiscal (NFe/NFCe)', example: '000123' })
+  @ApiProperty({
+    description: 'Número da nota fiscal (NFe/NFCe)',
+    example: '000123',
+  })
   number?: string;
 
   @Column({ nullable: true })
@@ -48,7 +57,10 @@ export class Invoice {
   serie?: string;
 
   @Column({ nullable: true })
-  @ApiProperty({ description: 'Chave de acesso da nota fiscal', example: '35241123456789000123550010000012341123456789' })
+  @ApiProperty({
+    description: 'Chave de acesso da nota fiscal',
+    example: '35241123456789000123550010000012341123456789',
+  })
   accessKey?: string;
 
   @Column({
@@ -64,23 +76,32 @@ export class Invoice {
   status: InvoiceStatus;
 
   @Column({ nullable: true })
-  @ApiProperty({ description: 'URL do arquivo XML da nota fiscal no Bling', required: false })
+  @ApiProperty({
+    description: 'URL do arquivo XML da nota fiscal',
+    required: false,
+  })
   xmlUrl?: string;
 
   @Column({ nullable: true })
-  @ApiProperty({ description: 'URL do PDF/DANFE da nota fiscal no Bling', required: false })
+  @ApiProperty({
+    description: 'URL do PDF/DANFE da nota fiscal',
+    required: false,
+  })
   pdfUrl?: string;
 
   @Column({ type: 'timestamp', nullable: true })
-  @ApiProperty({ description: 'Data e hora da emissão da nota fiscal', required: false })
+  @ApiProperty({
+    description: 'Data e hora da emissão da nota fiscal',
+    required: false,
+  })
   issuedAt?: Date;
 
   @CreateDateColumn()
-  @ApiProperty({ description: 'Data de criação do registro da nota fiscal' })
+  @ApiProperty({ description: 'Data de criação da nota fiscal' })
   createdAt: Date;
 
   @UpdateDateColumn()
-  @ApiProperty({ description: 'Data da última atualização do registro da nota fiscal' })
+  @ApiProperty({ description: 'Data da última atualização da nota fiscal' })
   updatedAt: Date;
 }
 

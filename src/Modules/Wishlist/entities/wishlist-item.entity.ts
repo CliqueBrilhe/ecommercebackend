@@ -18,11 +18,11 @@ export class WishlistItem {
   id: number;
 
   @ManyToOne(() => User, { onDelete: 'CASCADE' })
-  @ApiProperty({ description: 'Usuário dono da lista de desejos' })
+  @ApiProperty({ description: 'Usuário dono da lista de desejos', type: () => User })
   user: User;
 
   @ManyToOne(() => Product, { onDelete: 'CASCADE' })
-  @ApiProperty({ description: 'Produto adicionado à lista de desejos' })
+  @ApiProperty({ description: 'Produto adicionado à lista de desejos', type: () => Product })
   product: Product;
 
   @CreateDateColumn()

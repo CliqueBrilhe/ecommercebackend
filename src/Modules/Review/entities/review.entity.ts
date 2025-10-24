@@ -1,4 +1,4 @@
- // src/Modules/Review/entities/review.entity.ts
+// src/Modules/Review/entities/review.entity.ts
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -18,11 +18,11 @@ export class Review {
   id: number;
 
   @ManyToOne(() => User, { onDelete: 'CASCADE' })
-  @ApiProperty({ description: 'Usuário que realizou a avaliação' })
+  @ApiProperty({ description: 'Usuário que realizou a avaliação', type: () => User })
   user: User;
 
   @ManyToOne(() => Product, { onDelete: 'CASCADE' })
-  @ApiProperty({ description: 'Produto avaliado' })
+  @ApiProperty({ description: 'Produto avaliado', type: () => Product })
   product: Product;
 
   @Column({ type: 'int', default: 5 })

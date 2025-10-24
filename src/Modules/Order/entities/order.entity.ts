@@ -15,12 +15,7 @@ import { OrderItem } from './order-item.entity';
 import { Payment } from '../../Payment/entities/payment.entity';
 import { Invoice } from '../../Invoice/entities/invoice.entity';
 
-export type OrderStatus =
-  | 'pending'
-  | 'paid'
-  | 'shipped'
-  | 'delivered'
-  | 'cancelled';
+export type OrderStatus = 'pending' | 'paid' | 'shipped' | 'delivered' | 'cancelled';
 
 @Entity({ name: 'orders' })
 export class Order {
@@ -33,22 +28,26 @@ export class Order {
   blingId?: number;
 
   @ManyToOne(() => User, (user) => user.orders)
-  @ApiProperty({ description: 'Usuário que realizou o pedido' })
+  @ApiProperty({ description: 'Usuário que realizou o pedido', type: () => User })
   user: User;
 
   @OneToMany(() => OrderItem, (item) => item.order, { cascade: true })
-  @ApiProperty({ description: 'Itens do pedido' })
+  @ApiProperty({ description: 'Itens do pedido', type: () => [OrderItem] })
   items: OrderItem[];
 
   @OneToMany(() => Payment, (payment) => payment.order, { cascade: true })
-  @ApiProperty({ description: 'Pagamentos associados ao pedido' })
+  @ApiProperty({ description: 'Pagamentos associados ao pedido', type: () => [Payment] })
   payments: Payment[];
 
   @OneToOne(() => Invoice, (invoice) => invoice.order, { cascade: true })
-  @ApiProperty({ description: 'Nota fiscal gerada para o pedido', required: false })
+  @ApiProperty({ description: 'Nota fiscal gerada para o pedido', type: () => Invoice, required: false })
   invoice?: Invoice;
 
-  @Column({ type: 'enum', enum: ['pending', 'paid', 'shipped', 'delivered', 'cancelled'], default: 'pending' })
+  @Column({
+    type: 'enum',
+    enum: ['pending', 'paid', 'shipped', 'delivered', 'cancelled'],
+    default: 'pending',
+  })
   @ApiProperty({
     description: 'Status atual do pedido',
     enum: ['pending', 'paid', 'shipped', 'delivered', 'cancelled'],
@@ -80,6 +79,7 @@ export class Order {
   @ApiProperty({ description: 'Data da última atualização do pedido' })
   updatedAt: Date;
 }
+
 
 /*
 Histórico de alterações:

@@ -7,7 +7,7 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiHideProperty } from '@nestjs/swagger';
 import { User } from '../../User/entities/user.entity';
 import { Order } from '../../Order/entities/order.entity';
 import { PaymentMethod } from './payment-method.entity';
@@ -26,23 +26,33 @@ export class Payment {
   id: number;
 
   @Column({ nullable: true })
-  @ApiProperty({ description: 'ID correspondente ao pagamento no Bling ERP', required: false })
+  @ApiProperty({
+    description: 'ID correspondente ao pagamento no Bling ERP',
+    required: false,
+  })
   blingId?: number;
 
   @ManyToOne(() => User, (user) => user.payments)
-  @ApiProperty({ description: 'Usuário que realizou o pagamento' })
+  @ApiProperty({
+    description: 'Usuário que realizou o pagamento',
+    type: () => User,
+  })
   user: User;
 
-  @ManyToOne(() => Order, (order) => order.payments)
-  @ApiProperty({ description: 'Pedido associado a este pagamento' })
-  order: Order;
+ @ManyToOne(() => Order, (order) => order.payments)
+@ApiHideProperty() // 🔥 evita loop circular no Swagger
+order: Order;
+
 
   @ManyToOne(() => PaymentMethod, (method) => method.payments)
-  @ApiProperty({ description: 'Forma de pagamento utilizada' })
+  @ApiProperty({
+    description: 'Forma de pagamento utilizada',
+    type: () => PaymentMethod,
+  })
   paymentMethod: PaymentMethod;
 
   @Column({ type: 'decimal', precision: 10, scale: 2 })
-  @ApiProperty({ description: 'Valor total pago', example: 199.90 })
+  @ApiProperty({ description: 'Valor total pago', example: 199.9 })
   amount: number;
 
   @Column({
@@ -58,15 +68,23 @@ export class Payment {
   status: PaymentStatus;
 
   @Column({ nullable: true })
-  @ApiProperty({ description: 'Identificador da transação no gateway de pagamento (ex: Mercado Pago)' })
+  @ApiProperty({
+    description:
+      'Identificador da transação no gateway de pagamento (ex: Mercado Pago)',
+  })
   transactionId?: string;
 
   @Column({ nullable: true })
-  @ApiProperty({ description: 'Link de pagamento (boleto, PIX ou checkout externo)' })
+  @ApiProperty({
+    description: 'Link de pagamento (boleto, PIX ou checkout externo)',
+  })
   paymentLink?: string;
 
   @Column({ type: 'timestamp', nullable: true })
-  @ApiProperty({ description: 'Data e hora da confirmação do pagamento', required: false })
+  @ApiProperty({
+    description: 'Data e hora da confirmação do pagamento',
+    required: false,
+  })
   paidAt?: Date;
 
   @CreateDateColumn()
@@ -74,7 +92,9 @@ export class Payment {
   createdAt: Date;
 
   @UpdateDateColumn()
-  @ApiProperty({ description: 'Data da última atualização do registro de pagamento' })
+  @ApiProperty({
+    description: 'Data da última atualização do registro de pagamento',
+  })
   updatedAt: Date;
 }
 

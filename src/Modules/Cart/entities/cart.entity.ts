@@ -21,11 +21,11 @@ export class Cart {
   id: number;
 
   @ManyToOne(() => User, (user) => user.carts, { onDelete: 'CASCADE' })
-  @ApiProperty({ description: 'Usuário dono do carrinho' })
+  @ApiProperty({ description: 'Usuário dono do carrinho', type: () => User })
   user: User;
 
   @OneToMany(() => CartItem, (item) => item.cart, { cascade: true })
-  @ApiProperty({ description: 'Itens presentes no carrinho' })
+  @ApiProperty({ description: 'Itens presentes no carrinho', type: () => [CartItem] })
   items: CartItem[];
 
   @Column({
@@ -52,6 +52,7 @@ export class Cart {
   @ApiProperty({ description: 'Data da última atualização do carrinho' })
   updatedAt: Date;
 }
+
 
 /*
 Histórico de alterações:
