@@ -9,7 +9,7 @@ import { styledLog } from '../../../utils/log-style.util';
 
 @Injectable()
 export class CategoriaSyncService {
-  private readonly logger = new Logger(CategoriaSyncService.name);
+  // private readonly logger = new Logger(CategoriaSyncService.name);
 
   constructor(
     private readonly categoriaService: CategoriaService,

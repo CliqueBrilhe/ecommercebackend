@@ -34,6 +34,7 @@ export const moduleIcons = {
   warning: '⚠️',
   success: '✅',
   error: '❌',
+  webhook: '🪽'
 };
 
 export function colorize(text: string, color: keyof typeof colors): string {

@@ -1,76 +1,29 @@
 // src/Bling/core/bling.controller.ts
 
-/*
-🗓 22/10/2025 - 17:40
-✨ Refatoração completa do webhook do Bling:
-- Adicionado log detalhado do corpo bruto.
-- Tratamento unificado para event / operation / resource.
-- Padronização com styledLog() e cores ANSI.
-- Verificação de parsing do body e tratamento de erros silenciosos.
---------------------------------------------
-📘 Lógica:
-Recebe eventos de webhook do Bling e dispara atualizações locais de produtos.
-Compatível com diferentes formatos de payload (v2/v3).
-by: gabbu (github: gabriellesote)
-*/
 
-import { Controller, Get, Post, Headers, Logger, Body } from '@nestjs/common';
-import { BlingCatalogoService } from '../services/bling-catalogo.service';
-import { BlingProdutosSyncService } from '../../sync/services/bling-produtos-sync.service';
-import { styledLog, colors, logSeparator } from '../../../utils/log-style.util';
 
-@Controller('bling')
+import { Controller, Post, Headers, Logger, Body } from '@nestjs/common';
+import { styledLog, logSeparator } from '../../utils/log-style.util';
+
+@Controller('bling/core')
 export class BlingController {
   private readonly logger = new Logger(BlingController.name);
 
-  constructor(
-    private readonly blingService: BlingCatalogoService,
-    private readonly produtosSync: BlingProdutosSyncService,
-  ) {}
-
-  // 🔍 Endpoint para testes diretos com a API do Bling
-  @Get('produtos')
-  async getProdutosDireto() {
-    styledLog(
-      'products',
-      '🔍 Testando comunicação direta com API de produtos...',
-      'cyan',
-    );
-    return this.blingService.getProducts();
-  }
-
-  @Get('usuarios')
-  async getUsuarios() {
-    styledLog(
-      'users',
-      '🔍 Testando comunicação direta com API de produtos...',
-      'white',
-    );
-    return this.blingService.getUsers();
-  }
-
-  @Get('categorias')
-  async getCategoriasDireto() {
-    styledLog(
-      'categories',
-      '🔍 Testando comunicação direta com API de categorias...',
-      'cyan',
-    );
-    return this.blingService.getCategories();
-  }
-
-  // 📩 Webhook principal (criação, atualização e remoção)
-  // 📩 Webhook principal (criação, atualização e remoção)
+  /**
+   * 📩 Webhook principal (criação, atualização e remoção)
+   * Recebe eventos do Bling ERP e registra logs detalhados.
+   */
   @Post('webhook')
   async handleWebhook(
     @Body() body: any,
     @Headers() headers: Record<string, string>,
   ) {
-    logSeparator('WEBHOOK PRODUTO', 'magenta');
+    logSeparator('BLING WEBHOOK', 'magenta');
     this.logger.debug(
-      `📦 Corpo bruto do webhook:\n${JSON.stringify(body, null, 2)}`,
+      `📦 Corpo bruto recebido:\n${JSON.stringify(body, null, 2)}`,
     );
 
+    // 🚨 Validação inicial
     if (!body || Object.keys(body).length === 0) {
       styledLog(
         'warning',
@@ -81,60 +34,78 @@ export class BlingController {
     }
 
     try {
-      // 🔹 Detecta formato do payload
+      // 🔹 Normaliza payload (compatível v2/v3)
       const payload =
         body.data && typeof body.data === 'object' ? body.data : body;
       const event = body.event || 'unknown';
+      const resource = body.resource || 'unknown';
       const id = Number(payload.id);
 
+      styledLog(
+        'webhook',
+        `📬 Evento detectado: ${event} | Recurso: ${resource} | ID: ${id || 'N/A'}`,
+        'cyan',
+      );
+
+      // 🔍 Identifica o tipo de operação
       if (!id || isNaN(id)) {
         styledLog(
           'warning',
-          `⚠️ Payload recebido sem ID válido de produto. Evento: ${event}`,
+          `⚠️ Payload sem ID válido. Evento: ${event}`,
           'brightYellow',
         );
-        return { ok: false, message: 'Invalid or missing product ID' };
+        return { ok: false, message: 'Invalid or missing ID' };
       }
 
-      // 🔍 Detecta tipo de evento
       const isDeleteEvent =
         event?.includes('deleted') ||
         (Object.keys(payload).length === 1 && 'id' in payload);
 
       if (isDeleteEvent) {
-        styledLog('products', `🗑️ Produto removido (BlingID=${id})`, 'red');
-        await this.produtosSync.removeByBlingId(id);
-        return { ok: true, message: 'Product deleted successfully' };
+        styledLog(
+          'webhook',
+          `🗑️ Recurso removido no Bling (ID=${id})`,
+          'red',
+        );
+
+        // 🚧 Futuro: emitir evento interno para remover localmente
+        // await this.eventEmitter.emitAsync('bling.resource.deleted', { id, resource });
+
+        return { ok: true, message: 'Resource deletion event received' };
       }
 
-      // 🔹 Mapeia status do Bling "E" (inativo) para o backend
-      if (payload.situacao === 'E') payload.situacao = 'I';
+      // ✅ Caso de criação/atualização
+      styledLog(
+        'webhook',
+        `♻️ Recurso atualizado/criado (ID=${id})`,
+        'green',
+      );
 
-      // 🆕 Criação / Atualização
-      const { result } = await this.produtosSync.upsertFromWebhook(payload);
+      // 🚧 Futuro: emitir evento interno com base no tipo de recurso
+      // Example:
+      // await this.eventEmitter.emitAsync('bling.resource.upsert', { resource, payload });
 
-      if (result === 'created') {
-        styledLog(
-          'products',
-          `🆕 Produto criado via webhook: ${payload.nome} (BlingID=${id})`,
-          'brightGreen',
-        );
-      } else {
-        styledLog(
-          'products',
-          `♻️ Produto atualizado via webhook: ${payload.nome} (BlingID=${id})`,
-          'green',
-        );
-      }
-
-      return { ok: true, message: 'Product upserted successfully' };
+      return { ok: true, message: 'Webhook processed successfully' };
     } catch (error: any) {
       styledLog(
         'error',
-        `❌ Erro ao processar webhook do Bling: ${error.message}`,
+        `❌ Erro ao processar webhook: ${error.message}`,
         'brightRed',
       );
       return { ok: false, error: error.message };
     }
   }
 }
+
+
+/*
+🗓 24/10/2025 - 20:20
+♻️ Refatoração: BlingController agora atua apenas no núcleo (core) de integração.
+--------------------------------------------
+📘 Lógica:
+- Responsável exclusivamente por receber e tratar webhooks enviados pelo Bling.
+- Gera logs estruturados e detalhados.
+- Identifica eventos de criação, atualização e exclusão.
+- Futuramente poderá acionar sincronizações específicas (ex: produto, contato, pedido).
+by: gabbu (github: gabriellesote) ദ്ദി(˵ •̀ ᴗ - ˵ ) ✧
+*/
