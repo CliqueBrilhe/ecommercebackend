@@ -4,15 +4,35 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
 
+
+
+// Bling
 import { BlingModule } from './Bling/bling.module';
+import { BlingSyncModule } from 'Bling/sync/bling-sync.module';
 
+
+// Relacionados a user 
 import { AuthModule } from 'Modules/Auth/auth.module';
+import { UserModule } from './Modules/User/user.module';
+import { AddressModule } from 'Modules/Address/address.module';
 
+// Relacionados a  compra
+import { OrderModule } from './Modules/Order/order.module';
+import { PaymentModule } from 'Modules/Payment/payment.module';
+import { CartModule } from 'Modules/Cart/cart.module';
+import { InvoiceModule } from 'Modules/Invoice/invoice.module';
+import { WishlistModule } from 'Modules/Wishlist/wishlist.module';
+
+// Relacionados a  produto
 import { ProductModule } from './Modules/Product/product.module';
 import { CategoryModule } from './Modules/Category/category.module';
-import { UserModule } from './Modules/User/user.module';
-import { OrderModule } from './Modules/Order/order.module';
-import { BlingSyncModule } from 'Bling/sync/bling-sync.module';
+import { ReviewModule } from 'Modules/Review/review.module';
+
+
+
+
+
+
 
 /**
  * Função para obter a configuração do TypeORM baseada no ambiente.
@@ -53,6 +73,13 @@ const getOrmConfig = (configService: ConfigService): TypeOrmModuleOptions => {
     OrderModule,
     BlingSyncModule,
     AuthModule,
+    AddressModule,
+    PaymentModule,
+    CartModule,
+    ReviewModule,
+    InvoiceModule,
+    WishlistModule
+
   ],
 })
 export class AppModule {}

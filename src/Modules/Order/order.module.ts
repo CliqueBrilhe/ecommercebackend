@@ -8,10 +8,11 @@ import { OrderItem } from './entities/order-item.entity';
 import { Product } from '../Product/entities/product.entity';
 import { User } from '../User/entities/user.entity';
 import { AuthModule } from '../Auth/auth.module';
+import { Payment } from 'Modules/Payment/entities/payment.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Order, OrderItem, Product, User]),
+    TypeOrmModule.forFeature([Order, OrderItem, Product, User, Payment]),
     AuthModule, // 👈 permite proteger rotas de pedidos com JWT
   ],
   controllers: [OrderController],
