@@ -33,17 +33,17 @@ export class Invoice {
   })
   blingId?: number;
 
-  @OneToOne(() => Order, (order) => order.invoice)
+  @OneToOne(() => Order, (order) => order.invoice, { lazy: true })
   @JoinColumn()
- @ApiHideProperty() 
-  order: Order;
+  @ApiHideProperty()
+  order: Promise<Order>;
 
-  @ManyToOne(() => User, (user) => user.invoices)
+  @ManyToOne(() => User, (user) => user.invoices, { lazy: true })
   @ApiProperty({
     description: 'Usuário (cliente) associado à nota fiscal',
     type: () => User,
   })
-  user: User;
+  user: Promise<User>;
 
   @Column({ nullable: true })
   @ApiProperty({

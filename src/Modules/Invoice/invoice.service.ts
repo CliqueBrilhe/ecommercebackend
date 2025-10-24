@@ -24,24 +24,24 @@ export class InvoiceService {
   /**
    * Cria uma nova nota fiscal.
    */
-  async create(createInvoiceDto: CreateInvoiceDto): Promise<Invoice> {
-    const { orderId, userId, ...rest } = createInvoiceDto;
+async create(createInvoiceDto: CreateInvoiceDto): Promise<Invoice> {
+  const { orderId, userId, ...rest } = createInvoiceDto;
 
-    const order = await this.orderRepo.findOne({ where: { id: orderId } });
-    if (!order) throw new NotFoundException('Pedido não encontrado.');
+  const order = await this.orderRepo.findOne({ where: { id: orderId } });
+  if (!order) throw new NotFoundException('Pedido não encontrado.');
 
-    const user = await this.userRepo.findOne({ where: { id: userId } });
-    if (!user) throw new NotFoundException('Usuário não encontrado.');
+  const user = await this.userRepo.findOne({ where: { id: userId } });
+  if (!user) throw new NotFoundException('Usuário não encontrado.');
 
-    const invoice = this.invoiceRepo.create({
-      order,
-      user,
-      ...rest,
-      status: rest.status ?? 'pending',
-    });
+  const invoice = new Invoice();
+  invoice.order = Promise.resolve(order);
+  invoice.user = Promise.resolve(user);
+  invoice.status = 'pending';
+  Object.assign(invoice, rest);
 
-    return await this.invoiceRepo.save(invoice);
-  }
+  return await this.invoiceRepo.save(invoice);
+}
+
 
   /**
    * Retorna todas as notas fiscais.

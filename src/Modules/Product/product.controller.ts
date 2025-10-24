@@ -18,7 +18,8 @@ import {
 } from '@nestjs/swagger';
 import { ProductService } from './product.service';
 import { CreateProductDto } from './dto/create-product.dto';
-import { Product } from './entities/product.entity';
+import { UpdateProductDto } from './dto/update-product.dto';
+import { ProductResponseDto } from './dto/product-response.dto';
 
 @ApiTags('Products')
 @Controller('products')
@@ -32,10 +33,11 @@ export class ProductController {
   @ApiResponse({
     status: 201,
     description: 'Produto criado com sucesso',
-    type: Product,
+    type: ProductResponseDto, // ✅ DTO documental (não a entity)
   })
   async create(@Body() createProductDto: CreateProductDto) {
-    return this.productService.create(createProductDto);
+    const product = await this.productService.create(createProductDto);
+    return this.mapToResponse(product);
   }
 
   // 🧩 Listagem de categorias
@@ -56,10 +58,11 @@ export class ProductController {
   @ApiResponse({
     status: 200,
     description: 'Lista de produtos',
-    type: [Product],
+    type: [ProductResponseDto],
   })
-  findAll() {
-    return this.productService.findAll();
+  async findAll() {
+    const products = await this.productService.findAll();
+    return products.map((p) => this.mapToResponse(p));
   }
 
   // 🧩 Busca por ID
@@ -69,27 +72,29 @@ export class ProductController {
   @ApiResponse({
     status: 200,
     description: 'Produto encontrado',
-    type: Product,
+    type: ProductResponseDto,
   })
-  findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.productService.findOne(id);
+  async findOne(@Param('id', ParseIntPipe) id: number) {
+    const product = await this.productService.findOne(id);
+    return this.mapToResponse(product);
   }
 
   // 🧩 Atualização de produto
   @Put(':id')
   @ApiOperation({ summary: 'Atualiza um produto por ID' })
   @ApiParam({ name: 'id', type: Number })
-  @ApiBody({ type: Product })
+  @ApiBody({ type: UpdateProductDto })
   @ApiResponse({
     status: 200,
     description: 'Produto atualizado com sucesso',
-    type: Product,
+    type: ProductResponseDto,
   })
-  update(
+  async update(
     @Param('id', ParseIntPipe) id: number,
-    @Body() product: Partial<Product>,
+    @Body() product: UpdateProductDto,
   ) {
-    return this.productService.update(id, product);
+    const updated = await this.productService.update(id, product);
+    return this.mapToResponse(updated);
   }
 
   // 🧩 Exclusão de produto
@@ -97,19 +102,44 @@ export class ProductController {
   @ApiOperation({ summary: 'Remove um produto por ID' })
   @ApiParam({ name: 'id', type: Number })
   @ApiResponse({ status: 200, description: 'Produto removido com sucesso' })
-  delete(@Param('id', ParseIntPipe) id: number) {
+  async delete(@Param('id', ParseIntPipe) id: number) {
     return this.productService.delete(id);
+  }
+
+  // 🪄 Método auxiliar interno — converte entidade em DTO documental
+  private mapToResponse(product: any): ProductResponseDto {
+    return {
+      id: product.id,
+      blingId: product.blingId,
+      code: product.code,
+      name: product.name,
+      stockQuantity: product.stockQuantity,
+      price: Number(product.price),
+      stock: product.stock,
+      promotion: product.promotion,
+      width: product.width,
+      height: product.height,
+      depth: product.depth,
+      images: product.images || [],
+      description: product.description,
+      categoryId: product.category?.id ?? null,
+      synchronized: product.synchronized,
+      status: product.status,
+      createdAt: product.createdAt,
+      updatedAt: product.updatedAt,
+    };
   }
 }
 
 /*
 Histórico de alterações:
-Edição: 26/10/2025 - 01:25
-- Removida lógica de upload (Cloudinary)
-- Atualizado para trabalhar apenas com DTOs e ProductService
+Edição: 26/10/2025 - 01:35
+- Substituídos tipos Swagger de Product → ProductResponseDto
+- Adicionado mapeador interno mapToResponse() para conversão segura
 --------------------------------------------
 Explicação da lógica:
-O ProductController fornece endpoints CRUD para produtos.
-Removida dependência de upload e padronizada documentação Swagger.
+Este controller mantém toda a lógica original de CRUD intacta,
+mas documenta as respostas via ProductResponseDto para evitar
+dependências circulares e exibir respostas mais limpas no Swagger.
 by: gabbu (github: gabriellesote) ✧
 */

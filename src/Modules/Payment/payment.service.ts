@@ -20,39 +20,41 @@ export class PaymentService {
     private readonly paymentRepo: Repository<Payment>,
 
     @InjectRepository(PaymentMethod)
-    private readonly methodRepo: Repository<PaymentMethod>,
+    private readonly paymentMethodRepo: Repository<PaymentMethod>,
 
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
 
     @InjectRepository(Order)
     private readonly orderRepo: Repository<Order>,
+
   ) {}
 
-  async create(createPaymentDto: CreatePaymentDto): Promise<Payment> {
-    const { userId, orderId, paymentMethodId, amount, ...rest } = createPaymentDto;
+// src/Modules/Payment/payment.service.ts
+async create(createPaymentDto: CreatePaymentDto): Promise<Payment> {
+  const { orderId, userId, paymentMethodId, amount, ...rest } = createPaymentDto;
 
-    const user = await this.userRepo.findOne({ where: { id: userId } });
-    if (!user) throw new NotFoundException('Usuário não encontrado.');
+  const order = await this.orderRepo.findOne({ where: { id: orderId } });
+  if (!order) throw new NotFoundException('Pedido não encontrado.');
 
-    const order = await this.orderRepo.findOne({ where: { id: orderId } });
-    if (!order) throw new NotFoundException('Pedido não encontrado.');
+  const user = await this.userRepo.findOne({ where: { id: userId } });
+  if (!user) throw new NotFoundException('Usuário não encontrado.');
 
-    const method = await this.methodRepo.findOne({ where: { id: paymentMethodId } });
-    if (!method) throw new NotFoundException('Método de pagamento não encontrado.');
+  const paymentMethod = await this.paymentMethodRepo.findOne({ where: { id: paymentMethodId } });
+  if (!paymentMethod) throw new NotFoundException('Método de pagamento não encontrado.');
 
-    if (amount <= 0) throw new BadRequestException('Valor do pagamento inválido.');
+  // 🚀 Criamos a entidade manualmente para evitar o problema do .create()
+  const payment = new Payment();
+  payment.order = Promise.resolve(order);
+  payment.user = Promise.resolve(user);
+  payment.paymentMethod = Promise.resolve(paymentMethod);
+  payment.amount = amount;
+  payment.status = 'pending';
+  Object.assign(payment, rest);
 
-    const payment = this.paymentRepo.create({
-      user,
-      order,
-      paymentMethod: method,
-      amount,
-      ...rest,
-    });
+  return await this.paymentRepo.save(payment);
+}
 
-    return this.paymentRepo.save(payment);
-  }
 
   async findAll(): Promise<Payment[]> {
     return this.paymentRepo.find({

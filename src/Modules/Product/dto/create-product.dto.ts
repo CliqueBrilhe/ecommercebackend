@@ -72,17 +72,3 @@ export class CreateProductDto {
   @IsNumber({}, { message: 'O ID da categoria deve ser numérico' })
   categoryId: number;
 }
-
-/*
-Histórico de alterações:
-Edição: 26/10/2025 - 01:40
-- Renomeado stockQuantity → stock para alinhar com entity
-- Tornados width, height e depth opcionais
-- Ajustado promotion como percentual (int)
-- Adicionado IsString({ each: true }) em images
---------------------------------------------
-Explicação da lógica:
-DTO usado para criação de produtos, alinhado à entidade Product.
-Remove campos internos e valida dimensões e estoque com segurança.
-by: gabbu (github: gabriellesote) ✧
-*/

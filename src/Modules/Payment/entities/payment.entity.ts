@@ -7,7 +7,6 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { ApiProperty, ApiHideProperty } from '@nestjs/swagger';
 import { User } from '../../User/entities/user.entity';
 import { Order } from '../../Order/entities/order.entity';
 import { PaymentMethod } from './payment-method.entity';
@@ -22,37 +21,21 @@ export type PaymentStatus =
 @Entity({ name: 'payments' })
 export class Payment {
   @PrimaryGeneratedColumn()
-  @ApiProperty({ description: 'ID interno do pagamento' })
   id: number;
 
   @Column({ nullable: true })
-  @ApiProperty({
-    description: 'ID correspondente ao pagamento no Bling ERP',
-    required: false,
-  })
   blingId?: number;
 
-  @ManyToOne(() => User, (user) => user.payments)
-  @ApiProperty({
-    description: 'Usuário que realizou o pagamento',
-    type: () => User,
-  })
-  user: User;
+  @ManyToOne(() => User, (user) => user.payments, { lazy: true })
+  user: Promise<User>;
 
- @ManyToOne(() => Order, (order) => order.payments)
-@ApiHideProperty() // 🔥 evita loop circular no Swagger
-order: Order;
+  @ManyToOne(() => Order, (order) => order.payments, { lazy: true })
+  order: Promise<Order>;
 
-
-  @ManyToOne(() => PaymentMethod, (method) => method.payments)
-  @ApiProperty({
-    description: 'Forma de pagamento utilizada',
-    type: () => PaymentMethod,
-  })
-  paymentMethod: PaymentMethod;
+  @ManyToOne(() => PaymentMethod, (method) => method.payments, { lazy: true })
+  paymentMethod: Promise<PaymentMethod>;
 
   @Column({ type: 'decimal', precision: 10, scale: 2 })
-  @ApiProperty({ description: 'Valor total pago', example: 199.9 })
   amount: number;
 
   @Column({
@@ -60,55 +43,32 @@ order: Order;
     enum: ['pending', 'approved', 'refused', 'refunded', 'cancelled'],
     default: 'pending',
   })
-  @ApiProperty({
-    description: 'Status atual do pagamento',
-    enum: ['pending', 'approved', 'refused', 'refunded', 'cancelled'],
-    default: 'pending',
-  })
   status: PaymentStatus;
 
   @Column({ nullable: true })
-  @ApiProperty({
-    description:
-      'Identificador da transação no gateway de pagamento (ex: Mercado Pago)',
-  })
   transactionId?: string;
 
   @Column({ nullable: true })
-  @ApiProperty({
-    description: 'Link de pagamento (boleto, PIX ou checkout externo)',
-  })
   paymentLink?: string;
 
   @Column({ type: 'timestamp', nullable: true })
-  @ApiProperty({
-    description: 'Data e hora da confirmação do pagamento',
-    required: false,
-  })
   paidAt?: Date;
 
   @CreateDateColumn()
-  @ApiProperty({ description: 'Data de criação do registro de pagamento' })
   createdAt: Date;
 
   @UpdateDateColumn()
-  @ApiProperty({
-    description: 'Data da última atualização do registro de pagamento',
-  })
   updatedAt: Date;
 }
 
 /*
 Histórico de alterações:
-Edição: 23/10/2025 - 22:30
-- Criada entidade Payment com integração direta a User, Order e PaymentMethod
-- Adicionados campos compatíveis com gateways (transactionId, paymentLink, paidAt)
-- Incluído campo blingId para sincronização com o ERP Bling
+Edição: 24/10/2025 - 23:50
+- Removidos decorators do Swagger (ApiProperty, ApiHideProperty)
+- Mantida a estrutura ORM e lazy loading
 --------------------------------------------
 Explicação da lógica:
-A entidade Payment representa um pagamento real realizado por um usuário.
-Cada pagamento pertence a um pedido (Order) e utiliza uma forma de pagamento (PaymentMethod).
-Ela é usada para registrar e sincronizar os pagamentos confirmados com o ERP Bling.
-O campo status permite acompanhar o ciclo de vida do pagamento: pendente, aprovado, recusado, etc.
+Entidade Payment representa um pagamento vinculado a um pedido,
+com usuário, método e dados de status. Agora sem Swagger.
 by: gabbu (github: gabriellesote) ✧
 */

@@ -20,17 +20,16 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { OrderService } from './order.service';
-import { Order } from './entities/order.entity';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { JwtAuthGuard } from '../Auth/guards/jwt-auth.guard';
+import { OrderResponseDto } from './dto/order-response.dto'; // 👈 aqui entra o DTO documental
 
 @ApiTags('Orders')
 @Controller('orders')
 export class OrderController {
   constructor(private readonly orderService: OrderService) {}
 
-  // 🧩 Criação de pedido autenticada
   @UseGuards(JwtAuthGuard)
   @Post()
   @ApiBearerAuth()
@@ -39,14 +38,26 @@ export class OrderController {
   @ApiResponse({
     status: 201,
     description: 'Pedido criado com sucesso',
-    type: Order,
+    type: OrderResponseDto, // 👈 usamos o DTO aqui
   })
   async create(@Req() req, @Body() createOrderDto: CreateOrderDto) {
-    const userId = req.user.id; // vem do JWT
-    return this.orderService.create({ ...createOrderDto, userId });
+    const userId = req.user.id;
+    const order = await this.orderService.create({ ...createOrderDto, userId });
+
+    return {
+      id: order.id,
+      blingId: order.blingId,
+      status: order.status,
+      totalAmount: order.totalAmount,
+      shippingCost: order.shippingCost,
+      discount: order.discount,
+      synchronized: order.synchronized,
+      createdAt: order.createdAt,
+      updatedAt: order.updatedAt,
+      userId: order.user?.id,
+    };
   }
 
-  // 🧩 Listagem de todos os pedidos (restrita a admins futuramente)
   @UseGuards(JwtAuthGuard)
   @Get()
   @ApiBearerAuth()
@@ -54,13 +65,24 @@ export class OrderController {
   @ApiResponse({
     status: 200,
     description: 'Lista de pedidos',
-    type: [Order],
+    type: [OrderResponseDto], // 👈 aqui também
   })
-  findAll(): Promise<Order[]> {
-    return this.orderService.findAll();
+  async findAll(): Promise<OrderResponseDto[]> {
+    const orders = await this.orderService.findAll();
+    return orders.map((o) => ({
+      id: o.id,
+      blingId: o.blingId,
+      status: o.status,
+      totalAmount: o.totalAmount,
+      shippingCost: o.shippingCost,
+      discount: o.discount,
+      synchronized: o.synchronized,
+      createdAt: o.createdAt,
+      updatedAt: o.updatedAt,
+      userId: o.user?.id,
+    }));
   }
 
-  // 🧩 Listagem de pedidos do usuário autenticado
   @UseGuards(JwtAuthGuard)
   @Get('me')
   @ApiBearerAuth()
@@ -68,14 +90,25 @@ export class OrderController {
   @ApiResponse({
     status: 200,
     description: 'Pedidos encontrados',
-    type: [Order],
+    type: [OrderResponseDto], // 👈 substitui Order
   })
-  findMyOrders(@Req() req): Promise<Order[]> {
+  async findMyOrders(@Req() req): Promise<OrderResponseDto[]> {
     const cpf = req.user.cpf;
-    return this.orderService.findByCpf(cpf);
+    const orders = await this.orderService.findByCpf(cpf);
+    return orders.map((o) => ({
+      id: o.id,
+      blingId: o.blingId,
+      status: o.status,
+      totalAmount: o.totalAmount,
+      shippingCost: o.shippingCost,
+      discount: o.discount,
+      synchronized: o.synchronized,
+      createdAt: o.createdAt,
+      updatedAt: o.updatedAt,
+      userId: o.user?.id,
+    }));
   }
 
-  // 🧩 Atualização de pedido
   @UseGuards(JwtAuthGuard)
   @Put(':id')
   @ApiBearerAuth()
@@ -85,25 +118,33 @@ export class OrderController {
   @ApiResponse({
     status: 200,
     description: 'Pedido atualizado com sucesso',
-    type: Order,
+    type: OrderResponseDto, // 👈 ainda o DTO
   })
-  update(
+  async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateOrderDto: UpdateOrderDto,
-  ) {
-    return this.orderService.update(id, updateOrderDto);
+  ): Promise<OrderResponseDto> {
+    const order = await this.orderService.update(id, updateOrderDto);
+    return {
+      id: order.id,
+      blingId: order.blingId,
+      status: order.status,
+      totalAmount: order.totalAmount,
+      shippingCost: order.shippingCost,
+      discount: order.discount,
+      synchronized: order.synchronized,
+      createdAt: order.createdAt,
+      updatedAt: order.updatedAt,
+      userId: order.user?.id,
+    };
   }
 
-  // 🧩 Exclusão de pedido
   @UseGuards(JwtAuthGuard)
   @Delete(':id')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Remove um pedido por ID' })
   @ApiParam({ name: 'id', type: Number })
-  @ApiResponse({
-    status: 200,
-    description: 'Pedido removido com sucesso',
-  })
+  @ApiResponse({ status: 200, description: 'Pedido removido com sucesso' })
   delete(@Param('id', ParseIntPipe) id: number) {
     return this.orderService.delete(id);
   }
@@ -111,14 +152,13 @@ export class OrderController {
 
 /*
 Histórico de alterações:
-Edição: 26/10/2025 - 00:15
-- Adicionadas rotas protegidas com JwtAuthGuard
-- Adicionada rota /orders/me para listar pedidos do usuário autenticado
-- Ajustado método create para capturar userId via JWT
+Edição: 26/10/2025 - 00:40
+- Substituídas referências diretas à entidade Order por OrderResponseDto no Swagger
+- Adicionado mapeamento de retorno simplificado para o Swagger
 --------------------------------------------
 Explicação da lógica:
-O OrderController expõe endpoints CRUD para pedidos, com autenticação JWT.
-O usuário autenticado pode criar e visualizar seus próprios pedidos,
-enquanto a listagem geral será restrita a admins no futuro.
-by: gabbu (github: gabriellesote) ദ്ദി(˵ •̀ ᴗ - ˵ ) ✧
+Usar o OrderResponseDto evita dependências circulares e garante que o Swagger
+documente apenas dados primitivos e controlados. A lógica de negócio do controller
+permanece intacta, apenas o contrato de resposta documentado foi ajustado.
+by: gabbu (github: gabriellesote) ✧
 */
