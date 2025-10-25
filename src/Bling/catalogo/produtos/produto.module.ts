@@ -7,10 +7,12 @@ import { ProdutoSyncService } from './produto-sync.service';
 import { Product } from '../../../Modules/Product/entities/product.entity';
 import { Category } from '../../../Modules/Category/entities/category.entity';
 import { ProdutoListener } from './produto.listener';
+
 @Module({
   imports: [TypeOrmModule.forFeature([Product, Category])],
   providers: [ProdutoService, ProdutoSyncService, ProdutoListener],
   controllers: [ProdutoController],
+  exports: [ProdutoService, ProdutoSyncService]
 })
 export class ProdutoModule {}
 /*

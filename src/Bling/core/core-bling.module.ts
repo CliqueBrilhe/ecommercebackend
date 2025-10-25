@@ -9,11 +9,14 @@ import { BlingController } from './bling.controller';
 import { BlingSyncScheduler } from './bling-sync.scheduler';
 import { SyncLog } from './entities/sync-log.entity';
 
+import { CatalogoModule } from 'Bling/catalogo/catalogo.module';
+
 @Module({
   imports: [
     ScheduleModule.forRoot(),
     TypeOrmModule.forFeature([SyncLog]),
-    EventEmitterModule.forRoot(), // 🧠 Habilita o sistema de eventos interno
+    EventEmitterModule.forRoot(),
+    CatalogoModule, 
   ],
   controllers: [BlingController],
   providers: [BlingSyncScheduler],

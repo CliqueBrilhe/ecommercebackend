@@ -10,23 +10,34 @@ export class UsuarioListener {
 
   @OnEvent('bling.usuarios.upsert')
   async handleUpsert(event: { id: number; payload: any }) {
-    styledLog('users', `🆕 Evento recebido: Usuário atualizado/criado (ID=${event.id})`, 'green');
-    await this.usuarioSync.upsertFromWebhook(event.payload);
+    try {
+      styledLog('users', `🆕 Evento recebido: Usuário atualizado/criado (ID=${event.id})`, 'green');
+      await this.usuarioSync.upsertFromWebhook(event.payload);
+      styledLog('users', `✅ Evento upsert concluído (ID=${event.id})`, 'brightGreen');
+    } catch (err: any) {
+      styledLog('users', `❌ Erro ao processar evento upsert: ${err.message}`, 'brightRed');
+    }
   }
 
   @OnEvent('bling.usuarios.deleted')
   async handleDelete(event: { id: number }) {
-    styledLog('users', `🗑️ Evento recebido: Usuário removido (ID=${event.id})`, 'red');
-    await this.usuarioSync.removeByBlingId(event.id);
+    try {
+      styledLog('users', `🗑️ Evento recebido: Usuário removido (ID=${event.id})`, 'red');
+      await this.usuarioSync.removeByBlingId(event.id);
+      styledLog('users', `✅ Evento delete concluído (ID=${event.id})`, 'brightGreen');
+    } catch (err: any) {
+      styledLog('users', `❌ Erro ao processar evento delete: ${err.message}`, 'brightRed');
+    }
   }
 }
 
 /*
-🗓 24/10/2025 - 23:30
-✨ Novo listener para eventos de usuários.
+🗓 25/10/2025 - 02:10
+💪 Melhoria: tratamento de erros e logs padronizados no listener de usuários.
 --------------------------------------------
 📘 Lógica:
-- Escuta eventos "bling.usuarios.upsert" e "bling.usuarios.deleted".
-- Cria/atualiza ou remove usuários conforme o evento.
-by: gabbu (github: gabriellesote) ദ്ദി(˵ •̀ ᴗ - ˵ ) ✧
+- Escuta "bling.usuarios.upsert" e "bling.usuarios.deleted".
+- Cria/atualiza ou remove usuários conforme evento.
+- Adiciona segurança extra com try/catch e logs de confirmação.
+by: gabbu (github: gabriellesote) ✧
 */

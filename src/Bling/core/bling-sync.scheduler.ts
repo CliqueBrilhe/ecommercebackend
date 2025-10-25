@@ -8,6 +8,8 @@ import { performance } from 'perf_hooks';
 import { CategoriaSyncService } from '../catalogo/categorias/categoria-sync.service';
 import { ProdutoSyncService } from '../catalogo/produtos/produto-sync.service';
 import { SyncLog } from './entities/sync-log.entity';
+
+
 import {
   styledLog,
   colors,

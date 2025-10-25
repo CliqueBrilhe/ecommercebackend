@@ -1,36 +1,41 @@
-// src/Bling/bling.module.ts
-
+// src/Bling/Core/bling.module.ts
 import { Module } from '@nestjs/common';
-import { CoreBlingModule } from './core/bling.module';
-import { CatalogoModule } from './catalogo/catalogo.module';
-import { UsuarioModule } from './usuario/usuario.module';
-import { VendaModule } from './venda/venda.module';
+import { ScheduleModule } from '@nestjs/schedule';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 
-/**
- * 🌐 Módulo principal de integração com o Bling ERP.
- * Atua como orquestrador dos submódulos (Core, Catálogo, Usuário, Venda).
- */
+import { BlingController } from './core/bling.controller';
+import { BlingSyncScheduler } from './core/bling-sync.scheduler';
+import { SyncLog } from './core/entities/sync-log.entity';
+
+// ✅ importa o módulo que contém os serviços de categoria/produto
+import { CatalogoModule } from '../Bling/catalogo/catalogo.module';
+
 @Module({
   imports: [
-    CoreBlingModule, // 🧠 Núcleo: webhook global, scheduler e logs
-    CatalogoModule,  // 🛍️ Produtos e categorias
-    UsuarioModule,   // 👥 Contatos/clientes
-    VendaModule,     // 💳 Pedidos de venda e faturamento
+    ScheduleModule.forRoot(),
+    TypeOrmModule.forFeature([SyncLog]),
+    EventEmitterModule.forRoot(),
+
+    // ✅ IMPORTANTE: adiciona o catálogo
+    CatalogoModule,
+  ],
+  controllers: [BlingController],
+  providers: [BlingSyncScheduler],
+  exports: [
+    EventEmitterModule,
+    BlingSyncScheduler,
   ],
 })
-export class BlingModule {}
+export class CoreBlingModule {}
 
 /*
-🗓 24/10/2025 - 21:00
-♻️ Refatoração completa: BlingModule agora é o orquestrador global.
+🗓 25/10/2025 - 13:40
+🚑 Correção: adicionada importação do CatalogoModule no CoreBlingModule.
 --------------------------------------------
 📘 Lógica:
-- O módulo central (`BlingModule`) agora importa todos os módulos do ecossistema Bling:
-  • `CoreBlingModule`: contém o webhook mundial, scheduler e logs automáticos.
-  • `CatalogoModule`: cuida da sincronização de produtos e categorias.
-  • `UsuarioModule`: sincroniza contatos/clientes da API de vendas.
-  • `VendaModule`: integrará pedidos e faturas (futuro).
-- A arquitetura modular permite expansões futuras (ex: Estoques, Notas Fiscais).
-- Mantém o código desacoplado e reutilizável entre domínios.
-by: gabbu (github: gabriellesote) ദ്ദി(˵ •̀ ᴗ - ˵ ) ✧
+- O BlingSyncScheduler depende de CategoriaSyncService e ProdutoSyncService.
+- Ambos pertencem ao CatalogoModule.
+- Importar o módulo resolve o ciclo de dependência e permite injeção correta.
+by: gabbu (github: gabriellesote) ✧
 */

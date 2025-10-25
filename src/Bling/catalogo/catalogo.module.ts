@@ -3,25 +3,24 @@ import { Module } from '@nestjs/common';
 import { CategoriaModule } from './categorias/categoria.module';
 import { ProdutoModule } from './produtos/produto.module';
 
+/**
+ * 🧩 Módulo Catálogo do Bling
+ * Centraliza os módulos de categorias e produtos.
+ * Exporta ambos para uso pelo Core (sincronização automática, etc.).
+ */
 @Module({
-  imports: [
-    CategoriaModule, // 🔹 Sincronização e API de categorias
-    ProdutoModule,   // 🔹 Sincronização e API de produtos
-  ],
-  exports: [
-    CategoriaModule,
-    ProdutoModule,
-  ],
+  imports: [CategoriaModule, ProdutoModule],
+  exports: [CategoriaModule, ProdutoModule],
 })
 export class CatalogoModule {}
 
 /*
-🗓 24/10/2025 - 18:55
-🏗️ Criação do módulo agregador CatalogoModule.
+🗓 25/10/2025 - 13:40
+♻️ Correção: removida exportação direta de services (apenas reexporta módulos filhos).
 --------------------------------------------
 📘 Lógica:
-- Agrupa todos os submódulos de domínio do catálogo (produtos e categorias).
-- Facilita a importação única no CoreBlingModule.
-- Mantém o catálogo do Bling modular, escalável e desacoplado.
-by: gabbu (github: gabriellesote) ദ്ദി(˵ •̀ ᴗ - ˵ ) ✧
+- O Nest só permite exportar providers declarados no próprio módulo.
+- Como CategoriaSyncService e ProdutoSyncService estão em módulos filhos,
+  basta exportar CategoriaModule e ProdutoModule.
+by: gabbu (github: gabriellesote) ✧
 */
